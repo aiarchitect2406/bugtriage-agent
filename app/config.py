@@ -51,10 +51,10 @@ class Config:
             try:
                 client = secretmanager.SecretManagerServiceClient()
                 name = f"projects/{cls.PROJECT_ID}/secrets/{secret_id}/versions/latest"
-                response = client.access_secret_version(request={"name": name})
+                response = client.access_secret_version(request={"name": name}, timeout=2.0)
                 return response.payload.data.decode("UTF-8").strip()
             except Exception as e:
-                logging.warning(f"Failed to fetch secret '{secret_id}' from Secret Manager: {e}")
+                logging.debug(f"Secret Manager not reachable for '{secret_id}': {e}")
 
         if default is not None:
             return default

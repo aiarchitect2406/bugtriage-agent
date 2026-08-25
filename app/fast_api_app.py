@@ -26,6 +26,7 @@ from google.adk.runners import Runner
 
 from app.app_utils import services
 from app.app_utils.a2a import attach_a2a_routes
+from app.models.hitl import WebhookSignalInput
 
 load_dotenv()
 allow_origins = (
@@ -64,7 +65,7 @@ app: FastAPI = get_fast_api_app(
     artifact_service_uri=services.ARTIFACT_SERVICE_URI,
     allow_origins=allow_origins,
     session_service_uri=services.SESSION_SERVICE_URI,
-    otel_to_cloud=True,
+    otel_to_cloud=os.getenv("OTEL_TO_CLOUD", "false").lower() == "true",
     lifespan=lifespan,
 )
 app.title = "adk-bugtriage"
@@ -85,12 +86,17 @@ async def handle_github_issue_webhook(request: Request) -> Dict[str, Any]:
     title = issue.get("title", "Runtime Exception in payment gateway")
     body = issue.get("body", "")
     
+    is_blocker = any(k in title.lower() for k in ["critical", "blocker", "npe", "null"])
+    severity_val = "Blocker" if is_blocker else "Major"
+
     report = BugReport(
         issue_id=f"GH-{issue_num}",
         title=title,
         description=body,
         raw_logs=body,
-        severity_hint="Blocker" if "npe" in title.lower() or "crash" in title.lower() or "null" in title.lower() else "Major"
+        stack_trace=body,
+        source_system="GitHub",
+        metadata={"severity": severity_val}
     )
     
     result = TriageCoordinator.run_triage_pipeline(report)

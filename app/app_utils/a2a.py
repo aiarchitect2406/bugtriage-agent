@@ -25,18 +25,29 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.server.routes import (
-    add_a2a_routes_to_fastapi,
-    create_agent_card_routes,
-    create_jsonrpc_routes,
-)
-from a2a.server.routes.common import DefaultServerCallContextBuilder
-from a2a.server.tasks import TaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentExtension, AgentInterface
-from a2a.utils.constants import AGENT_CARD_WELL_KNOWN_PATH
-from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
-from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+try:
+    from a2a.server.request_handlers import DefaultRequestHandler
+    from a2a.server.routes import (
+        add_a2a_routes_to_fastapi,
+        create_agent_card_routes,
+        create_jsonrpc_routes,
+    )
+    from a2a.server.routes.common import DefaultServerCallContextBuilder
+    from a2a.server.tasks import TaskStore
+    from a2a.types import AgentCapabilities, AgentCard, AgentExtension, AgentInterface
+    from a2a.utils.constants import AGENT_CARD_WELL_KNOWN_PATH
+    from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
+    from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+    A2A_AVAILABLE = True
+except Exception:
+    A2A_AVAILABLE = False
+    DefaultServerCallContextBuilder = object
+    AgentCapabilities = object
+    AgentCard = object
+    AgentExtension = object
+    AgentInterface = object
+    AGENT_CARD_WELL_KNOWN_PATH = "/.well-known/agent-card.json"
+
 
 
 class _A2AServerCallContextBuilder(DefaultServerCallContextBuilder):
@@ -134,6 +145,9 @@ async def attach_a2a_routes(
     ``APP_URL``). Call once per app — typically in a FastAPI ``lifespan``, since
     the card is built asynchronously; repeated calls register duplicate routes.
     """
+    if not A2A_AVAILABLE:
+        return
+
     resolved_app_url = app_url or os.getenv("APP_URL", "http://0.0.0.0:8000")
     resolved_agent_version = agent_version or os.getenv("AGENT_VERSION", "0.1.0")
     resolved_capabilities = capabilities or _default_capabilities()

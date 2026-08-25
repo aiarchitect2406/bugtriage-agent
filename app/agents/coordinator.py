@@ -79,6 +79,16 @@ coordinator_agent = Agent(
 )
 
 
+_HISTORICAL_ISSUES_STORE: List[Dict[str, Any]] = [
+    {
+        "issue_id": "BUG-2026-001",
+        "title": "NullPointerException in payment_gateway.py during checkout",
+        "description": "Crash when processing checkout with null shipping address or None payload",
+        "stack_trace": "File \"services/payment_gateway.py\", line 42, in process_checkout\nTypeError: 'NoneType' object is not subscriptable",
+    }
+]
+
+
 class TriageCoordinator:
     """Lead Bug Triage Coordinator Engine implementing end-to-end multi-agent orchestration."""
 
@@ -110,9 +120,10 @@ class TriageCoordinator:
         sanitized_report = SanitizedBugReport(**ingest_res["sanitized_report"])
 
         # Step 2: Vector Duplicate Detection
+        candidates = historical_candidates if historical_candidates is not None else list(_HISTORICAL_ISSUES_STORE)
         dedupe_res = self.dedupe_runner.check_duplicate(
             sanitized_report, 
-            historical_candidates=historical_candidates, 
+            historical_candidates=candidates, 
             request_id=req_id
         )
         if dedupe_res.get("status") == "ERROR":
@@ -128,8 +139,18 @@ class TriageCoordinator:
                 "explanation": dedupe_info.get("explanation"),
             }
 
+        # Store newly triaged issue in historical store for subsequent deduplication
+        _HISTORICAL_ISSUES_STORE.append({
+            "issue_id": sanitized_report.issue_id,
+            "title": sanitized_report.title,
+            "description": sanitized_report.cleaned_description,
+            "stack_trace": bug_report.stack_trace or sanitized_report.sanitized_logs,
+        })
+
         # Step 3: Ownership & Context Enrichment
-        severity_hint = bug_report.metadata.get("severity", "Major")
+        severity_hint = bug_report.metadata.get("severity") or (
+            "Blocker" if any(k in bug_report.title.lower() for k in ["critical", "blocker", "npe"]) else "Major"
+        )
         enrich_res = self.enrichment_runner.enrich_bug_context(
             sanitized_report, 
             severity_hint=severity_hint, 
@@ -208,6 +229,18 @@ class TriageCoordinator:
             "code_review": code_review_info,
             "a2ui_card": a2ui_card,
         }
+
+    @classmethod
+    def run_triage_pipeline(
+        cls, bug_report: BugReport, historical_candidates: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """Class method convenience runner for autonomous bug triage pipeline."""
+        coordinator = cls()
+        return coordinator.execute_triage_pipeline(
+            bug_report=bug_report,
+            historical_candidates=historical_candidates
+        )
+
 
 
 # Direct re-export of the ADK 2.0 Graph Workflow DAG

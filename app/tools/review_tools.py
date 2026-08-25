@@ -76,7 +76,6 @@ File Modified: {target_file_path}
         vertex_client = AnthropicVertex(
             region=Config.ANTHROPIC_LOCATION,
             project_id=Config.PROJECT_ID,
-            timeout=5.0,
         )
         target_model = model_name
         response = vertex_client.messages.create(
@@ -85,6 +84,7 @@ File Modified: {target_file_path}
             temperature=0.0,
             system=CLAUDE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}],
+            timeout=5.0,
         )
         raw_text = response.content[0].text.strip()
         if raw_text.startswith("```"):
