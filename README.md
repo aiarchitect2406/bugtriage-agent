@@ -37,9 +37,29 @@ In high-velocity engineering organizations and shared microservice platforms, so
 
 ---
 
-## 2. Multi-Agent Architecture & Pipeline DAG
+## 2. End-to-End GEAP Reference Architecture
+
+![Autonomous Bug Triage Agent & GEAP Reference Architecture](docs/images/architecture.png)
+
+### End-to-End User & Agent Lifecycle Flow
+
+| Step | Component | Interaction & Execution Details |
+| :---: | :--- | :--- |
+| **①** | **Target Microservice** | Developer/User reports an issue or crash on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with stack traces and crash logs. |
+| **②** | **Direct Webhook Ingress** | GitHub fires a webhook (`POST /webhooks/github/issues`) over TLS to the **FastAPI Ingestion Gateway** hosted on Google Cloud Run protected by Cloud Armor WAF. |
+| **③** | **Cloud DLP Sanitization** | **IngestionAgent** scrubs API keys, bearer tokens, and customer PII before any LLM processing or log indexing occurs. |
+| **④** | **Vector Deduplication** | **DedupeAgent** queries Vertex AI Vector Search / Memory Bank using cosine embeddings. Duplicates are linked to active parent issues; unique bugs proceed. |
+| **⑤** | **Routing & Zero-Trust Gating** | **EnrichmentAgent** evaluates `.github/CODEOWNERS` and Git blame history (`@payments-team`, P0). **Policy Server** issues SPIFFE attested JIT downscoped capabilities. |
+| **⑥** | **Ephemeral Sandbox** | **CodeRemediationAgent** & `EphemeralAgentSandbox` clone `example-payment-svc` into `/tmp/geap_agent_sandbox_*`, synthesize standalone `pytest` reproduction tests, verify failure, synthesize unified diff patches via `gemini-3.1-pro`, verify 100% test pass, and purge sandbox state. |
+| **⑦** | **Human-in-the-Loop A2UI** | Agent pauses in `AWAITING_HUMAN_REVIEW` and renders the interactive "Vibe Diff" card. Developer reviews diff & test proof, then signs off via HMAC SHA-256. |
+| **⑧** | **GitHub Draft PR Opened** | Agent Git tool pushes branch `fix/bug-...` and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with the verified fix and regression suite! |
+
+---
+
+## 3. Multi-Agent Architecture & Pipeline DAG
 
 The system implements a **Coordinator-Worker DAG** pattern using Google ADK 2.0:
+
 
 ```
                                ┌────────────────────────────────────────────────┐
@@ -102,48 +122,42 @@ The agent equips modular, typed functional tools adhering to Google ADK 2.0 spec
 
 ## 4. Developer Experience & Workflow Integration
 
-The agent integrates into engineering workflows across three interaction surfaces:
+The agent integrates into engineering workflows across multiple interaction surfaces:
 
-### 4.1 Automated Webhook & ChatOps Workflow (Slack / Jira / GitHub)
+### 4.1 Automated GitHub Issue Webhook & ChatOps
 ```
-  [Production Alert] ──► [Agent DAG] ──► [A2UI Review Card in Slack] ──► [Developer Clicks "APPROVE"] ──► [GitHub Draft PR]
+  [GitHub Issue Opened on example-payment-svc] ──► [FastAPI /webhooks/github/issues] ──► [Agent DAG] ──► [A2UI Review Card] ──► [Developer Clicks "APPROVE"] ──► [Draft PR on example-payment-svc]
 ```
-1. An incoming crash webhook triggers `/webhook/alert-intake`.
-2. The agent sanitizes logs, checks duplicates, routes ownership, and verifies a fix in the sandbox.
-3. The session pauses in `AWAITING_HUMAN_REVIEW` and posts an interactive A2UI card into Slack/Jira.
-4. The engineer reviews "The Vibe Diff" and clicks **APPROVE**.
-5. The Cloud Run webhook listener ([`app/hitl/webhook_listener.py`](file:///Users/nrcheruku/sourcecode/work/bugtriage-agent/app/hitl/webhook_listener.py)) validates the HMAC signature and opens a GitHub Draft PR.
+1. A new issue or crash report is opened on [`example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc).
+2. GitHub triggers the direct webhook `POST /webhooks/github/issues` to the Cloud Run FastAPI ingestion gateway.
+3. The agent sanitizes logs, checks vector duplicates, routes ownership, and verifies a fix in the isolated ephemeral sandbox.
+4. The session pauses in `AWAITING_HUMAN_REVIEW` and posts an interactive A2UI card into Slack/Jira.
+5. The engineer reviews "The Vibe Diff" and clicks **APPROVE**.
+6. The Cloud Run webhook listener (`app/hitl/webhook_listener.py`) validates the HMAC signature and opens a GitHub Draft PR on `aiarchitect2406/example-payment-svc`.
 
-### 4.2 Interactive Developer CLI (`agentapi` & Google `adk` CLI)
-Developers can inspect triage state, resume paused sessions, or chat directly with the agent from their terminal:
+### 4.2 Interactive Developer CLI & Demo Runner
+Developers and presenters can inspect triage state, resume paused sessions, or run the live demo:
 
 ```bash
-# Start an interactive triage session with Gemini 3.7 Flash
-agentapi new-conversation --model=flash --title="Checkout Crash" "Triage NPE in payment_checkout.py"
+# Run the interactive live YouTube demo walkthrough
+python3 scripts/demo_youtube_flow.py
 
-# Inspect conversation metadata and check paused HITL state
-agentapi get-conversation-metadata <conversation-id>
-
-# Resume a paused session with developer approval
-agentapi send-message --title="HITL Approval" "<conversation-id>" "APPROVE: Patch verified locally."
-
-# Run local ADK Web Server UI on port 8080
-adk web --port=8080
+# Run local ADK Web Server UI on port 8085
+adk web --port=8085 app
 
 # Execute interactive CLI chat against the TriageCoordinator
 adk run app.agents.coordinator:root_agent
 ```
 
-### 4.3 Visual Test Console (`/ui`)
-Start the FastAPI server and open [http://localhost:8080/ui](http://localhost:8080/ui) to select sample alerts, watch the live multi-agent execution trajectory, and inspect generated A2UI cards in real time.
-
 ---
 
-## 5. Live Grounded Verification against Target Codebase (`target_repo/`)
+## 5. Decoupled Monitored Microservice (`example-payment-svc`)
 
-The repository includes an active target service workspace ([`target_repo/`](file:///Users/nrcheruku/sourcecode/work/bugtriage-agent/target_repo)) with realistic microservices, CODEOWNERS rules, and unit test suites:
-- [`target_repo/services/payment_gateway.py`](file:///Users/nrcheruku/sourcecode/work/bugtriage-agent/target_repo/services/payment_gateway.py) $\rightarrow$ Handled by `@payments-team` (from [`target_repo/.github/CODEOWNERS`](file:///Users/nrcheruku/sourcecode/work/bugtriage-agent/target_repo/.github/CODEOWNERS))
-- [`target_repo/services/auth_service.py`](file:///Users/nrcheruku/sourcecode/work/bugtriage-agent/target_repo/services/auth_service.py) $\rightarrow$ Handled by `@security-team`
+The agent monitors an external enterprise microservice repository ([`https://github.com/aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc)) with realistic microservices, CODEOWNERS rules, and unit test suites:
+- [`services/payment_gateway.py`](https://github.com/aiarchitect2406/example-payment-svc/blob/main/services/payment_gateway.py) $\rightarrow$ Handled by `@payments-team` (from `.github/CODEOWNERS`)
+- [`services/auth_service.py`](https://github.com/aiarchitect2406/example-payment-svc/blob/main/services/auth_service.py) $\rightarrow$ Handled by `@security-team`
+- Dynamic isolated reproduction tests and unified diff patches are tested inside gVisor-isolated ephemeral sandboxes without mutating host code.
+
 
 ---
 
