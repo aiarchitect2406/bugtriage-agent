@@ -41,13 +41,6 @@ In high-velocity engineering organizations and shared microservice platforms, so
 
 ```mermaid
 flowchart LR
-    classDef repo fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px;
-    classDef runtime fill:#e6f4ea,stroke:#137333,stroke-width:2px;
-    classDef agents fill:#fef7e0,stroke:#b06000,stroke-width:2px;
-    classDef sandbox fill:#fce8e6,stroke:#c5221f,stroke-width:2px;
-    classDef hitl fill:#f3e8fd,stroke:#7627bb,stroke-width:2px;
-    classDef output fill:#e8eaed,stroke:#5f6368,stroke-width:2px;
-
     subgraph S1["1. Monitored Service"]
         direction TB
         User(["👤 Developer / User<br/>Reports Crash"])
@@ -96,13 +89,6 @@ flowchart LR
     Enrich -->|"Passes Context"| Remediate
     Sandbox -->|"4. Review Card"| A2UI
     A2UI -->|"On Approval"| GitTool
-
-    class User,TargetRepo repo;
-    class Webhook,Coordinator runtime;
-    class DLP,Dedupe,Enrich agents;
-    class Remediate,Sandbox sandbox;
-    class A2UI,Engineer hitl;
-    class GitTool,DraftPR output;
 ```
 
 ### End-to-End Workflow Breakdown
