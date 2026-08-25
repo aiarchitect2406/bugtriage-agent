@@ -37,22 +37,86 @@ In high-velocity engineering organizations and shared microservice platforms, so
 
 ---
 
-## 2. End-to-End GEAP Reference Architecture
+## 2. Reference Architecture
 
-![Autonomous Bug Triage Agent & GEAP Reference Architecture](docs/images/architecture.png)
+```mermaid
+flowchart TD
+    classDef repo fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px;
+    classDef runtime fill:#e6f4ea,stroke:#137333,stroke-width:2px;
+    classDef agents fill:#fef7e0,stroke:#b06000,stroke-width:2px;
+    classDef sandbox fill:#fce8e6,stroke:#c5221f,stroke-width:2px;
+    classDef hitl fill:#f3e8fd,stroke:#7627bb,stroke-width:2px;
+    classDef output fill:#e8eaed,stroke:#5f6368,stroke-width:2px;
 
-### End-to-End User & Agent Lifecycle Flow
+    subgraph UserFlow ["1. Monitored Service & Issue Ingestion"]
+        User(["👤 End User / Developer<br/>Reports Crash or Bug"])
+        TargetRepo["📦 GitHub Target Repository<br/><b>aiarchitect2406/example-payment-svc</b><br/>• services/payment_gateway.py<br/>• .github/CODEOWNERS"]
+        User -->|"1. Opens Issue with logs"| TargetRepo
+    end
 
-| Step | Component | Interaction & Execution Details |
-| :---: | :--- | :--- |
-| **①** | **Target Microservice** | Developer/User reports an issue or crash on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with stack traces and crash logs. |
-| **②** | **Direct Webhook Ingress** | GitHub fires a webhook (`POST /webhooks/github/issues`) over TLS to the **FastAPI Ingestion Gateway** hosted on Google Cloud Run protected by Cloud Armor WAF. |
-| **③** | **Cloud DLP Sanitization** | **IngestionAgent** scrubs API keys, bearer tokens, and customer PII before any LLM processing or log indexing occurs. |
-| **④** | **Vector Deduplication** | **DedupeAgent** queries Vertex AI Vector Search / Memory Bank using cosine embeddings. Duplicates are linked to active parent issues; unique bugs proceed. |
-| **⑤** | **Routing & Zero-Trust Gating** | **EnrichmentAgent** evaluates `.github/CODEOWNERS` and Git blame history (`@payments-team`, P0). **Policy Server** issues SPIFFE attested JIT downscoped capabilities. |
-| **⑥** | **Ephemeral Sandbox** | **CodeRemediationAgent** & `EphemeralAgentSandbox` clone `example-payment-svc` into `/tmp/geap_agent_sandbox_*`, synthesize standalone `pytest` reproduction tests, verify failure, synthesize unified diff patches via `gemini-3.1-pro`, verify 100% test pass, and purge sandbox state. |
-| **⑦** | **Human-in-the-Loop A2UI** | Agent pauses in `AWAITING_HUMAN_REVIEW` and renders the interactive "Vibe Diff" card. Developer reviews diff & test proof, then signs off via HMAC SHA-256. |
-| **⑧** | **GitHub Draft PR Opened** | Agent Git tool pushes branch `fix/bug-...` and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with the verified fix and regression suite! |
+    subgraph IngressLayer ["2. ADK Agent Runtime (Built-in FastAPI)"]
+        WebhookHandler["⚡ GitHub Issue Webhook<br/><b>POST /webhooks/github/issues</b><br/>Direct event listener on ADK FastAPI"]
+        Coordinator["🧠 ADK Triage Coordinator<br/>(Gemini 3.7 Flash)<br/>Orchestrates multi-agent execution DAG"]
+        TargetRepo -->|"2. Dispatches webhook event"| WebhookHandler
+        WebhookHandler -->|"3. Triggers triage run"| Coordinator
+    end
+
+    subgraph AgentPipeline ["3. Multi-Agent Analysis Pipeline"]
+        DLP["🛡️ IngestionAgent<br/>Cloud DLP scrubs API keys & customer PII"]
+        Dedupe["🔍 DedupeAgent<br/>Vector embeddings deduplication (Vertex AI)"]
+        Ownership["📋 EnrichmentAgent<br/>Resolves .github/CODEOWNERS & assigns SLA"]
+        PolicyServer["🔒 Zero-Trust Policy Server<br/>Issues SPIFFE token & gates tool execution"]
+
+        Coordinator --> DLP
+        DLP --> Dedupe
+        Dedupe -->|"Unique Bug"| Ownership
+        Ownership --> PolicyServer
+    end
+
+    subgraph SandboxLayer ["4. Isolated Ephemeral Sandbox"]
+        Remediation["⚙️ CodeRemediationAgent<br/>Gemini 3.1 Pro code reasoning"]
+        Sandbox["🧪 Ephemeral Agent Sandbox<br/>(/tmp/geap_agent_sandbox_*)<br/>• Clones example-payment-svc<br/>• Synthesizes pytest repro test (fails)<br/>• Applies unified diff patch<br/>• Re-runs pytest (100% passes)<br/>• Purges all sandbox state"]
+
+        PolicyServer --> Remediation
+        Remediation <-->|"Executes test & verifies fix"| Sandbox
+    end
+
+    subgraph HITLLayer ["5. Human-in-the-Loop Review"]
+        A2UICard["📑 A2UI Review Card<br/>Paused in AWAITING_HUMAN_REVIEW<br/>Displays unified diff & pytest proof"]
+        Engineer(["👨‍💻 Lead Engineer<br/>Reviews diff & clicks Approve"])
+
+        Sandbox -->|"Publishes review artifact"| A2UICard
+        Engineer -->|"4. Signs off via HMAC token"| A2UICard
+    end
+
+    subgraph EgressLayer ["6. Pull Request Delivery"]
+        GitTool["🚀 Git PR Tool<br/>Pushes branch fix/bug-..."]
+        DraftPR["🔀 GitHub Draft Pull Request<br/>Opened on <b>example-payment-svc</b><br/>Assigned to @payments-team"]
+
+        A2UICard -->|"5. Triggers automated PR"| GitTool
+        GitTool -->|"6. Creates Draft PR"| DraftPR
+    end
+
+    class User,TargetRepo repo;
+    class WebhookHandler,Coordinator runtime;
+    class DLP,Dedupe,Ownership,PolicyServer agents;
+    class Remediation,Sandbox sandbox;
+    class A2UICard,Engineer hitl;
+    class GitTool,DraftPR output;
+```
+
+### End-to-End Workflow Breakdown
+
+| Stage | Component | What Happens |
+| :--- | :--- | :--- |
+| **1. Issue Ingestion** | **Target Microservice** | Developer or user reports a crash on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with stack traces and crash logs. |
+| **2. Direct Webhook** | **ADK Agent Runtime** | GitHub dispatches an event to the built-in FastAPI endpoint (`POST /webhooks/github/issues`), initiating the ADK multi-agent DAG. |
+| **3. PII Sanitization** | **IngestionAgent** | Cloud DLP scrubs leaked API keys, credentials, and customer emails before any reasoning or logging occurs. |
+| **4. Vector Dedupe** | **DedupeAgent** | Error signatures are compared against historical vectors using cosine similarity ($\ge 0.85$). Duplicate issues link to active parents; unique issues proceed. |
+| **5. Ownership & SLA** | **EnrichmentAgent** | Evaluates `.github/CODEOWNERS` and Git blame history to assign the ticket to `@payments-team` with a `P0` Blocker SLA. |
+| **6. Ephemeral Sandbox** | **CodeRemediationAgent** | An isolated sandbox workspace is dynamically provisioned in `/tmp/geap_agent_sandbox_*`. It clones the repository, writes a `pytest` reproduction test, verifies failure, synthesizes a fix with `gemini-3.1-pro`, verifies the test passes 100%, and purges all temporary files. |
+| **7. HITL Gate** | **A2UI Review Card** | The pipeline pauses in `AWAITING_HUMAN_REVIEW`. An interactive card with the diff and test proof is presented for engineer review and HMAC signoff. |
+| **8. Automated Draft PR** | **Git PR Tool** | Upon approval, the agent pushes the fix branch and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) for final team review and merge. |
 
 ---
 
