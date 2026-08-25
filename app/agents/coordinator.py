@@ -20,6 +20,12 @@ from app.observability.tracing import CloudObservabilityPlugin
 from app.hitl.state_store import HITLStateStore, generate_memories_callback
 from app.hitl.card_renderer import render_a2ui_review_card
 from app.observability.logger import StructuredLogger
+from app.skills.loader import (
+    get_skill_catalog,
+    discover_available_skills,
+    load_skill_instruction,
+)
+from app.agents.dynamic_subagent import get_subagent_factory
 from app.tools import (
     sanitize_logs_and_extract_stack,
     query_similar_bugs_by_vector,
@@ -29,18 +35,20 @@ from app.tools import (
     review_code_patch_with_claude,
 )
 
-COORDINATOR_AGENT_CONSTITUTION = """
-You are the Lead Bug Triage Coordinator Agent implementing Maker-Checker multi-model orchestration on Google ADK 2.0 and Gemini Enterprise Agent Platform.
+_catalog = get_skill_catalog()
 
-Strict Operational Workflow:
+COORDINATOR_AGENT_CONSTITUTION = f"""
+You are the Lead Bug Triage Coordinator Agent implementing Maker-Checker multi-model orchestration on Google ADK 2.0 with Progressive Disclosure.
+
+Operational Workflow:
 1. INGESTION: Sanitize raw logs, redact PII via DLP/Model Armor, and extract structured stack frames.
-2. DEDUPLICATION: Query vector similarity.
-   - CRITICAL RULE: If `is_duplicate` is True, STOP IMMEDIATELY. Do not enrich, do not remediate, and do not create pull requests. Return:
-     "Triage outcome: Status DUPLICATE_LINKED. Parent Ticket: <parent_ticket>. Similarity Score >= 0.85."
+2. DEDUPLICATION: Query vector similarity. If duplicate, STOP immediately and link to parent ticket.
 3. ENRICHMENT: Resolve microservice CODEOWNERS and calculate SLA priority (Blocker -> P0).
 4. REMEDIATION [MAKER]: Synthesize reproduction pytest in isolated sandbox with Gemini 3.1 Pro.
 5. PEER REVIEW [CHECKER]: Conduct independent Maker-Checker code & security audit using Claude Sonnet on Vertex AI.
 6. HITL REVIEW & PR: Prepare high-confidence Draft Pull Request with Maker-Checker review badge.
+
+{_catalog.get_skills_manifest()}
 """
 
 coordinator_agent = Agent(
@@ -51,6 +59,8 @@ coordinator_agent = Agent(
     ),
     instruction=COORDINATOR_AGENT_CONSTITUTION.strip(),
     tools=[
+        discover_available_skills,
+        load_skill_instruction,
         sanitize_logs_and_extract_stack,
         query_similar_bugs_by_vector,
         resolve_codeowners_and_blame,
