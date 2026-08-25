@@ -94,10 +94,11 @@ def test_ephemeral_agent_sandbox_lifecycle():
     
     test_file, code = sandbox.synthesize_repro_test_in_sandbox("BUG-TEST-001", "services/payment_gateway.py")
     assert test_file.startswith("test_bug_test_001")
-    assert os.path.exists(os.path.join(sandbox_dir, "target_repo", "tests", test_file))
+    assert os.path.exists(os.path.join(sandbox_dir, "example_payment_svc", "tests", test_file))
     
     diff, exp = sandbox.apply_patch_in_sandbox("services/payment_gateway.py", "BUG-TEST-001")
     assert "calculate_tax" in diff or "state" in diff
+
     
     # Teardown
     sandbox.teardown_sandbox()

@@ -16,7 +16,11 @@ except ImportError:
 class Config:
     """System configuration and Model Routing constants adhering to ADK 2.0."""
     
-    REPO_NAME: str = os.getenv("TARGET_REPO", "aiarchitect2406/bugtriage-agent")
+    REPO_NAME: str = os.getenv("TARGET_REPO", "aiarchitect2406/example-payment-svc")
+    TARGET_REPO_URL: str = os.getenv("TARGET_REPO_URL", "https://github.com/aiarchitect2406/example-payment-svc.git")
+    TARGET_REPO_NAME: str = os.getenv("TARGET_REPO_NAME", "aiarchitect2406/example-payment-svc")
+    LOCAL_TARGET_REPO_PATH: str = os.getenv("LOCAL_TARGET_REPO_PATH", "/Users/nrcheruku/sourcecode/personal/example-payment-svc")
+    GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "nithin-usbaws-aiml-solns-demos"))
     LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
     

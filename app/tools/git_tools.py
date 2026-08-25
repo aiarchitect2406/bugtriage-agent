@@ -54,11 +54,11 @@ def create_draft_pull_request(
         None: All exceptions are caught and returned in the structured dictionary.
     """
     try:
-        repo = repository_name or Config.REPO_NAME
+        repo = repository_name or Config.TARGET_REPO_NAME
         branch = branch_name or f"fix/{issue_id.lower().replace('-', '_')}"
-        target_repo_dir = os.path.join(os.getcwd(), "target_repo")
+        target_repo_dir = Config.LOCAL_TARGET_REPO_PATH
 
-        # Perform real Git branch creation and commit if target_repo exists
+        # Perform real Git branch creation and commit if target repo exists
         if os.path.exists(target_repo_dir) and os.path.exists(os.path.join(target_repo_dir, ".git")):
             # 1. Checkout new branch
             subprocess.run(
@@ -94,12 +94,13 @@ def create_draft_pull_request(
             pull_request_number=pr_number,
             pull_request_url=pr_url,
             branch_name=branch,
-            message=f"Created Git branch '{branch}' in target_repo and committed fix. Draft Pull Request ready for {reviewer_handle or '@payments-team'}."
+            message=f"Created Git branch '{branch}' in {repo} and committed fix. Draft Pull Request ready for {reviewer_handle or '@payments-team'}."
         ).model_dump()
 
     except Exception as e:
         return CreateDraftPROutput(
             status="ERROR",
             message=f"Failed to create draft PR: {str(e)}",
-            recovery_hint="Check Git permissions and target_repo directory status."
+            recovery_hint="Check Git permissions and target repository status."
         ).model_dump()
+

@@ -16,6 +16,7 @@ import time
 from typing import Dict, Any, Tuple, Optional
 from pydantic import BaseModel, Field
 
+from app.config import Config
 from app.models.remediation import ReproductionTestOutput, FixPatchOutput, SandboxExecutionResult
 
 class EphemeralSandboxConfig(BaseModel):
@@ -35,15 +36,23 @@ class EphemeralAgentSandbox:
         """Provisions a new isolated ephemeral directory for code generation and test execution."""
         self.sandbox_dir = tempfile.mkdtemp(prefix="geap_agent_sandbox_")
         
-        # Clone target_repo structure into ephemeral sandbox
-        host_target_repo = os.path.join(os.getcwd(), "target_repo")
-        sandbox_target_repo = os.path.join(self.sandbox_dir, "target_repo")
+        # Clone or copy target repo structure into ephemeral sandbox
+        target_source = Config.LOCAL_TARGET_REPO_PATH
+        sandbox_target_repo = os.path.join(self.sandbox_dir, "example_payment_svc")
         
-        if os.path.exists(host_target_repo):
-            shutil.copytree(host_target_repo, sandbox_target_repo, ignore=shutil.ignore_patterns(".git*", "__pycache__"))
+        if os.path.exists(target_source):
+            shutil.copytree(target_source, sandbox_target_repo, ignore=shutil.ignore_patterns(".git*", "__pycache__", ".pytest_cache*"))
         else:
-            os.makedirs(os.path.join(sandbox_target_repo, "services"), exist_ok=True)
-            os.makedirs(os.path.join(sandbox_target_repo, "tests"), exist_ok=True)
+            try:
+                subprocess.run(
+                    ["git", "clone", "--depth", "1", Config.TARGET_REPO_URL, sandbox_target_repo],
+                    check=True,
+                    capture_output=True,
+                    timeout=10
+                )
+            except Exception:
+                os.makedirs(os.path.join(sandbox_target_repo, "services"), exist_ok=True)
+                os.makedirs(os.path.join(sandbox_target_repo, "tests"), exist_ok=True)
 
         return self.sandbox_dir
 
@@ -52,13 +61,14 @@ class EphemeralAgentSandbox:
         if not self.sandbox_dir:
             self.provision_sandbox()
 
+        sandbox_target_repo = os.path.join(self.sandbox_dir, "example_payment_svc")
         test_file_name = f"test_{issue_id.lower().replace('-', '_')}_repro.py"
-        test_path = os.path.join(self.sandbox_dir, "target_repo", "tests", test_file_name)
+        test_path = os.path.join(sandbox_target_repo, "tests", test_file_name)
 
         if "payment" in target_file_rel.lower():
             repro_code = f'''"""Automated Ephemeral Sandbox Reproduction Test for {issue_id}."""
 import pytest
-from target_repo.services.payment_gateway import process_checkout
+from services.payment_gateway import process_checkout
 
 def test_reproduce_null_address_checkout():
     """Verifies checkout handles None shipping_address safely."""
@@ -75,7 +85,7 @@ def test_reproduce_null_address_checkout():
         else:
             repro_code = f'''"""Automated Ephemeral Sandbox Reproduction Test for {issue_id}."""
 import pytest
-from target_repo.services.auth_service import verify_jwt_token
+from services.auth_service import verify_jwt_token
 
 def test_reproduce_jwt_verification():
     """Verifies jwt verification handles None or missing exp safely."""
@@ -95,16 +105,17 @@ def test_reproduce_jwt_verification():
         if not self.sandbox_dir:
             self.provision_sandbox()
 
+        sandbox_target_repo = os.path.join(self.sandbox_dir, "example_payment_svc")
         clean_rel = target_file_rel.replace("target_repo/", "").replace("app/", "").lstrip("/")
-        sandbox_target_path = os.path.join(self.sandbox_dir, "target_repo", clean_rel)
+        sandbox_target_path = os.path.join(sandbox_target_repo, clean_rel)
 
         if not os.path.exists(sandbox_target_path):
             if "auth" in clean_rel:
                 clean_rel = "services/auth_service.py"
-                sandbox_target_path = os.path.join(self.sandbox_dir, "target_repo", clean_rel)
+                sandbox_target_path = os.path.join(sandbox_target_repo, clean_rel)
             else:
                 clean_rel = "services/payment_gateway.py"
-                sandbox_target_path = os.path.join(self.sandbox_dir, "target_repo", clean_rel)
+                sandbox_target_path = os.path.join(sandbox_target_repo, clean_rel)
 
         if not os.path.exists(sandbox_target_path):
             return "", "Target file not found in sandbox."
@@ -151,15 +162,16 @@ def test_reproduce_jwt_verification():
         if not self.sandbox_dir:
             return {"returncode": 1, "stdout": "", "stderr": "Sandbox not provisioned."}
 
-        test_path = os.path.join(self.sandbox_dir, "target_repo", "tests", test_file_name)
+        sandbox_target_repo = os.path.join(self.sandbox_dir, "example_payment_svc")
+        test_path = os.path.join(sandbox_target_repo, "tests", test_file_name)
         
         env = os.environ.copy()
-        env["PYTHONPATH"] = f"{self.sandbox_dir}:{env.get('PYTHONPATH', '')}"
+        env["PYTHONPATH"] = f"{sandbox_target_repo}:{env.get('PYTHONPATH', '')}"
 
         cmd = [sys.executable, "-m", "pytest", test_path, "-v"]
         run_res = subprocess.run(
             cmd,
-            cwd=self.sandbox_dir,
+            cwd=sandbox_target_repo,
             env=env,
             capture_output=True,
             text=True,
@@ -170,6 +182,7 @@ def test_reproduce_jwt_verification():
             "stdout": run_res.stdout,
             "stderr": run_res.stderr
         }
+
 
     def teardown_sandbox(self) -> None:
         """Purges and destroys the ephemeral sandbox workspace."""

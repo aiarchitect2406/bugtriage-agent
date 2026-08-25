@@ -5,6 +5,7 @@ import fnmatch
 import subprocess
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
+from app.config import Config
 from app.models.bug_report import StackFrame, EnrichmentContext
 
 class ResolveOwnershipInput(BaseModel):
@@ -28,8 +29,8 @@ SLA_MATRIX = {
 }
 
 def _load_codeowners_rules() -> List[tuple[str, List[str]]]:
-    """Loads CODEOWNERS rules dynamically from target_repo/.github/CODEOWNERS if available."""
-    codeowners_path = os.path.join(os.getcwd(), "target_repo", ".github", "CODEOWNERS")
+    """Loads CODEOWNERS rules dynamically from target repo .github/CODEOWNERS if available."""
+    codeowners_path = os.path.join(Config.LOCAL_TARGET_REPO_PATH, ".github", "CODEOWNERS")
     rules: List[tuple[str, List[str]]] = []
     
     if os.path.exists(codeowners_path):
@@ -56,9 +57,10 @@ def _load_codeowners_rules() -> List[tuple[str, List[str]]]:
     return rules
 
 def _get_git_blame_authors(file_path: str) -> List[str]:
-    """Runs actual git blame / git log on the target file in target_repo."""
-    target_repo_dir = os.path.join(os.getcwd(), "target_repo")
-    rel_path = file_path.replace("target_repo/", "")
+    """Runs actual git blame / git log on the target file in target repo."""
+    target_repo_dir = Config.LOCAL_TARGET_REPO_PATH
+    rel_path = file_path.replace("target_repo/", "").replace("app/", "").lstrip("/")
+
     
     authors: List[str] = []
     if os.path.exists(target_repo_dir):

@@ -15,11 +15,13 @@
 import contextlib
 import os
 from collections.abc import AsyncIterator
+from typing import Dict, Any
 
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
+
 from google.adk.runners import Runner
 
 from app.app_utils import services
@@ -69,8 +71,47 @@ app.title = "adk-bugtriage"
 app.description = "API for interacting with the Agent adk-bugtriage"
 
 
+@app.post("/webhooks/github/issues")
+async def handle_github_issue_webhook(request: Request) -> Dict[str, Any]:
+    """Ingests GitHub issue creation webhooks and triggers autonomous triage pipeline."""
+    from app.models.bug_report import BugReport
+    from app.agents.coordinator import TriageCoordinator
+
+    payload = await request.json()
+    action = payload.get("action", "opened")
+    issue = payload.get("issue", {})
+    
+    issue_num = issue.get("number", "101")
+    title = issue.get("title", "Runtime Exception in payment gateway")
+    body = issue.get("body", "")
+    
+    report = BugReport(
+        issue_id=f"GH-{issue_num}",
+        title=title,
+        description=body,
+        raw_logs=body,
+        severity_hint="Blocker" if "npe" in title.lower() or "crash" in title.lower() or "null" in title.lower() else "Major"
+    )
+    
+    result = TriageCoordinator.run_triage_pipeline(report)
+    return {
+        "status": "PROCESSED",
+        "action": action,
+        "issue_id": report.issue_id,
+        "triage_result": result
+    }
+
+
+@app.post("/webhooks/hitl/action")
+async def handle_hitl_action_webhook(signal: WebhookSignalInput) -> Dict[str, Any]:
+    """Handles HMAC-authenticated approval or rejection signals from Human Reviewers."""
+    from app.hitl.webhook_listener import process_hitl_webhook_signal
+    return process_hitl_webhook_signal(signal)
+
+
 # Main execution
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
