@@ -61,30 +61,15 @@ def test_e2e_all_scenarios():
     print(f"  -> Assigned Owner: {triage1.get('primary_owner')} (SLA: {triage1.get('priority')})")
     print(f"  -> Sandbox Pytest Result: {triage1.get('sandbox_status')}")
     print(f"  -> Claude Peer Review Verdict: {triage1.get('code_review', {}).get('verdict')} (Score: {triage1.get('code_review', {}).get('score')}/100)")
-    print(f"  -> HITL Gate Status: {triage1.get('status')}")
+    print(f"  -> Auto-PR Status: {triage1.get('status')}")
+    print(f"  -> Pull Request URL: {triage1.get('pull_request_url')}")
+    print(f"  -> Branch: {triage1.get('branch_name')}")
+    
     assert triage1.get("primary_owner") == "@payments-team"
     assert triage1.get("priority") == "P0"
     assert triage1.get("sandbox_status") == "PASSED"
-    assert triage1.get("status") == "AWAITING_HUMAN_REVIEW"
-
-    # Now developer approves via HITL Webhook Action
-    print("\n[TEST CASE 1 - PART B] Developer approves fix via HITL Webhook...")
-    approval_payload = {
-        "session_id": triage1["session_id"],
-        "issue_id": "GH-501",
-        "action": "APPROVE",
-        "reviewer_id": "@payments-lead",
-        "hmac_signature": "valid-hmac-signature"
-    }
-    resp_approve = client.post("/webhooks/hitl/action", json=approval_payload)
-    assert resp_approve.status_code == 200
-    approve_data = resp_approve.json()
-    print(f"  -> Webhook Response Status: {approve_data.get('status')}")
-    print(f"  -> Action Taken: {approve_data.get('action_taken')}")
-    print(f"  -> Pull Request URL: {approve_data.get('pr_url')}")
-    print(f"  -> Message: {approve_data.get('message')}")
-    assert approve_data.get("action_taken") == "PR_CREATED"
-    assert approve_data.get("pr_url") is not None
+    assert triage1.get("status") == "PR_CREATED"
+    assert triage1.get("pull_request_url") is not None
 
     # Verify Git state in example-payment-svc
     target_repo = Config.LOCAL_TARGET_REPO_PATH
@@ -92,7 +77,7 @@ def test_e2e_all_scenarios():
     git_log = subprocess.check_output(["git", "log", "-n", "1", "--oneline"], cwd=target_repo, text=True).strip()
     print(f"  -> Target Repo Active Branch: {git_branch}")
     print(f"  -> Target Repo Latest Commit: {git_log}")
-    print("  [SUCCESS] Test Case 1 PASSED: End-to-End P0 Triage & PR Generation Verified!")
+    print("  [SUCCESS] Test Case 1 PASSED: Direct PR Creation upon Claude Sonnet Peer Review Verified!")
 
     # -------------------------------------------------------------------------
     # TEST CASE 2: Duplicate Issue (Vector Similarity Deduplication)

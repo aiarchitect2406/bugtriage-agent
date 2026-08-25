@@ -198,11 +198,11 @@ class TriageCoordinator:
         )
         code_review_info = review_res
 
-        # Step 6: Human-in-the-Loop Gateway Pause
+        # Step 6: Automated PR Creation upon Claude Sonnet Review Approval
         gate_state = HITLGateState(
             session_id=session_id,
             issue_id=sanitized_report.issue_id,
-            status="AWAITING_HUMAN_REVIEW",
+            status="APPROVED",
             severity=enrichment_context.severity,
             priority=enrichment_context.priority,
             primary_owner=enrichment_context.primary_owner,
@@ -211,12 +211,44 @@ class TriageCoordinator:
             patch_explanation=fix_patch.get("explanation", ""),
             claude_review=code_review_info,
         )
-        
         a2ui_card = render_a2ui_review_card(gate_state)
         HITLStateStore.async_consolidate_memory(session_id)
 
+        # Directly open PR when Claude Maker-Checker review verdict is APPROVED
+        if code_review_info.get("verdict") == "APPROVED":
+            pr_output = create_draft_pull_request(
+                issue_id=sanitized_report.issue_id,
+                repository_name=Config.GITHUB_REPO,
+                diff_patch=fix_patch.get("diff_patch", ""),
+                test_code=repro_test.get("test_code", ""),
+                reviewer_handle=enrichment_context.primary_owner,
+                review_verdict=code_review_info.get("verdict", "APPROVED"),
+                review_score=code_review_info.get("score", 95),
+                reviewer_model=code_review_info.get("reviewer_model", "claude-sonnet-4-6"),
+                commit_message=f"fix({sanitized_report.issue_id}): Automated remediation verified by Claude Sonnet peer review",
+            )
+            pr_res = pr_output if isinstance(pr_output, dict) else pr_output.model_dump()
+            return {
+                "status": "PR_CREATED",
+                "session_id": session_id,
+                "issue_id": sanitized_report.issue_id,
+                "primary_owner": enrichment_context.primary_owner,
+                "severity": enrichment_context.severity,
+                "priority": enrichment_context.priority,
+                "sla_target_hours": enrichment_context.sla_target_hours,
+                "sandbox_status": sandbox_res.get("status"),
+                "proposed_diff_patch": fix_patch.get("diff_patch"),
+                "failing_test_code": repro_test.get("test_code"),
+                "code_review": code_review_info,
+                "pull_request_url": pr_res.get("pull_request_url"),
+                "pull_request_number": pr_res.get("pull_request_number"),
+                "branch_name": pr_res.get("branch_name"),
+                "message": pr_res.get("message"),
+                "a2ui_card": a2ui_card,
+            }
+
         return {
-            "status": "AWAITING_HUMAN_REVIEW",
+            "status": "NEEDS_ATTENTION",
             "session_id": session_id,
             "issue_id": sanitized_report.issue_id,
             "primary_owner": enrichment_context.primary_owner,

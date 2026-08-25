@@ -34,8 +34,9 @@ def test_end_to_end_triage_flow():
         metadata={"severity": "Blocker"}
     )
     res = coordinator.execute_triage_pipeline(report)
-    assert res["status"] == "AWAITING_HUMAN_REVIEW"
+    assert res["status"] == "PR_CREATED"
     assert res["primary_owner"] == "@payments-team"
     assert res["priority"] == "P0"
     assert res["sandbox_status"] == "PASSED"
+    assert "pull_request_url" in res
     assert "a2ui_card" in res
