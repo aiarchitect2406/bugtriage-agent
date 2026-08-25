@@ -4,6 +4,7 @@ from google.adk.apps import App
 from app.agents.coordinator import coordinator_agent, TriageCoordinator
 from app.workflow import bug_triage_workflow
 from app.plugins.guardrails import GuardrailPolicyPlugin
+from app.observability.tracing import CloudObservabilityPlugin
 
 # Primary Root Agent configured with ADK 2.0
 root_agent = coordinator_agent
@@ -12,7 +13,10 @@ root_agent = coordinator_agent
 app = App(
     root_agent=root_agent,
     name="app",
-    plugins=[GuardrailPolicyPlugin()],
+    plugins=[
+        GuardrailPolicyPlugin(),
+        CloudObservabilityPlugin(),
+    ],
 )
 
 __all__ = [

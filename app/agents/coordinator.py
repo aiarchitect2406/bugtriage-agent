@@ -16,6 +16,7 @@ from app.agents.enrichment import enrichment_agent, EnrichmentAgentRunner
 from app.agents.remediation import remediation_agent, CodeRemediationAgentRunner
 from app.agents.review import code_review_agent, CodeReviewAgentRunner
 from app.plugins.guardrails import GuardrailPolicyPlugin
+from app.observability.tracing import CloudObservabilityPlugin
 from app.hitl.state_store import HITLStateStore, generate_memories_callback
 from app.hitl.card_renderer import render_a2ui_review_card
 from app.observability.logger import StructuredLogger
@@ -28,28 +29,18 @@ from app.tools import (
     review_code_patch_with_claude,
 )
 
-from app.skills.registry import DynamicSkillRegistry
-
-skill_registry = DynamicSkillRegistry()
-
-COORDINATOR_AGENT_CONSTITUTION = f"""
-You are the Lead Bug Triage Coordinator Agent implementing Maker-Checker multi-model orchestration.
-
-Progressive Disclosure Architecture:
-To prevent context window bloat and reasoning degradation, do not pre-load all tool definitions and subagent instructions.
-Dynamically resolve and activate specific domain skills only when their activation cues trigger.
-
-{skill_registry.get_progressive_prompt_catalog()}
+COORDINATOR_AGENT_CONSTITUTION = """
+You are the Lead Bug Triage Coordinator Agent implementing Maker-Checker multi-model orchestration on Google ADK 2.0 and Gemini Enterprise Agent Platform.
 
 Strict Operational Workflow:
-1. INGESTION (Skill: 'log-sanitization-dlp'): Sanitize raw logs, redact PII via DLP/regex, and extract stack frames.
-2. DEDUPLICATION (Skill: 'vector-deduplication'): Query vector similarity.
+1. INGESTION: Sanitize raw logs, redact PII via DLP/Model Armor, and extract structured stack frames.
+2. DEDUPLICATION: Query vector similarity.
    - CRITICAL RULE: If `is_duplicate` is True, STOP IMMEDIATELY. Do not enrich, do not remediate, and do not create pull requests. Return:
      "Triage outcome: Status DUPLICATE_LINKED. Parent Ticket: <parent_ticket>. Similarity Score >= 0.85."
-3. ENRICHMENT (Skill: 'ownership-routing'): Find CODEOWNERS, calculate SLA priority.
-4. REMEDIATION [MAKER] (Skill: 'sandbox-remediation'): Synthesize reproduction pytest in isolated subprocess sandbox with Gemini 3.1 Pro.
-5. PEER REVIEW [CHECKER] (Skill: 'peer-code-review-claude'): Conduct independent code & security audit using Claude Sonnet.
-6. HITL REVIEW & PR (Skill: 'hitl-pull-request'): Prepare high-confidence Draft Pull Request with Claude review badge.
+3. ENRICHMENT: Resolve microservice CODEOWNERS and calculate SLA priority (Blocker -> P0).
+4. REMEDIATION [MAKER]: Synthesize reproduction pytest in isolated sandbox with Gemini 3.1 Pro.
+5. PEER REVIEW [CHECKER]: Conduct independent Maker-Checker code & security audit using Claude Sonnet on Vertex AI.
+6. HITL REVIEW & PR: Prepare high-confidence Draft Pull Request with Maker-Checker review badge.
 """
 
 coordinator_agent = Agent(
@@ -187,6 +178,7 @@ class TriageCoordinator:
             failing_test_code=repro_test.get("test_code", ""),
             proposed_diff_patch=fix_patch.get("diff_patch", ""),
             patch_explanation=fix_patch.get("explanation", ""),
+            claude_review=code_review_info,
         )
         
         HITLStateStore.save_paused_state(gate_state)
@@ -210,3 +202,7 @@ class TriageCoordinator:
             "code_review": code_review_info,
             "a2ui_card": a2ui_card,
         }
+
+
+# Direct re-export of the ADK 2.0 Graph Workflow DAG
+from app.workflow import bug_triage_workflow as triage_workflow, bug_triage_workflow

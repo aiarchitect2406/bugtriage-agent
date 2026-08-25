@@ -2,6 +2,8 @@
 
 > **System Directive for Coding Agents**: This document defines the absolute engineering, security, context, observability, and quality standards for all development, refactoring, and integration within this repository. As a Coding Agent (e.g., Antigravity, Claude Code, Gemini CLI), you must strictly parse, adhere to, and execute the policies laid out below. Every change is evaluated against the 95-point AgentOps Code Review Matrix and strictly grounded in the **Gemini Enterprise Agent Platform (GEAP)**.
 
+# use only native ADK and GEAP features everywhere and do not write any custom boiler plate code
+
 ---
 
 # Gemini Enterprise Agent Platform (GEAP) Core Directives
