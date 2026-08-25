@@ -69,7 +69,7 @@ flowchart LR
         direction TB
         Maker["⚙️ Maker: Gemini 3.1 Pro<br/>Synthesizes Repro Test & Fix"]
         Sandbox["🧪 Ephemeral Sandbox<br/>• Pytest Repro (Fails)<br/>• Unified Diff Applied<br/>• Pytest Pass (100%)"]
-        Reviewer["🛡️ Checker: Claude Sonnet<br/>• Unbiased Peer Audit<br/>• Security (CWE-476, CWE-89)<br/>• LGTM Review Badge"]
+        Reviewer["🛡️ Checker: Claude Sonnet 4.6<br/>• Vertex AI (global)<br/>• Security (CWE-476, CWE-89)<br/>• LGTM Review Badge"]
         
         Maker <-->|"Runs Tests"| Sandbox
         Sandbox -->|"Passes Diff"| Reviewer
@@ -107,7 +107,7 @@ flowchart LR
 | **4. Vector Dedupe** | **DedupeAgent** | Vector Embeddings | Error signatures are compared against historical vectors using cosine similarity ($\ge 0.85$). Duplicate issues link to active parents; unique issues proceed. |
 | **5. Ownership & SLA** | **EnrichmentAgent** | `gemini-3.7-flash` | Evaluates `.github/CODEOWNERS` and Git blame history to assign the ticket to `@payments-team` with a `P0` Blocker SLA. |
 | **6. Maker Fix Synthesis** | **CodeRemediationAgent** | `gemini-3.1-pro` | An isolated sandbox workspace (`/tmp/geap_agent_sandbox_*`) clones the repo, writes a `pytest` reproduction test, confirms failure, generates a diff patch, and verifies 100% test pass. |
-| **7. Checker Peer Review** | **CodeReviewAgent** | `claude-3-5-sonnet` | An unbiased, independent review subagent inspects the diff and test suite for CWE security (CWE-476, CWE-89), type safety, and edge cases, issuing a formal score (e.g. 96/100) and review badge. |
+| **7. Checker Peer Review** | **CodeReviewAgent** | `claude-sonnet-4-6` (Vertex AI) | An unbiased, independent review subagent running Claude Sonnet 4.6 on Google Cloud Vertex AI (`global` region) inspects the diff and test suite for CWE security (CWE-476, CWE-89), type safety, and edge cases, issuing a formal score (e.g. 96/100) and review badge. |
 | **8. HITL Gate** | **A2UI Review Card** | Interactive UI | The pipeline pauses in `AWAITING_HUMAN_REVIEW`. An interactive card with the diff, sandbox test proof, and Claude Review Badge is presented for engineer review. |
 | **9. Automated Draft PR** | **Git PR Tool** | GitHub API | Upon approval, the agent pushes the fix branch and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with peer review metadata attached. |
 
@@ -152,7 +152,8 @@ The system implements a **Coordinator-Worker DAG with Maker-Checker Peer Review*
                                                                                          ▼
                                                                             ┌─────────────────────────┐
                                                                             │     CodeReviewAgent     │
-                                                                            │   (claude-3-5-sonnet)   │
+                                                                            │   (claude-sonnet-4-6)   │
+                                                                            │     Vertex AI global    │
                                                                             │       [CHECKER]         │
                                                                             ├─────────────────────────┤
                                                                             │ • Unbiased peer review  │
@@ -184,7 +185,7 @@ The agent equips modular, typed functional tools adhering to Google ADK 2.0 spec
 | **`query_similar_bugs_by_vector`** | Computes vector cosine similarity against historical open issues. Suppresses duplicate notification spam when similarity exceeds $0.85$. |
 | **`resolve_codeowners_and_blame`** | Parses `.github/CODEOWNERS` and `git blame` history from disk to route the ticket to the responsible engineering team on Attempt #1. |
 | **`execute_reproduction_and_sandbox_fix`** | Invokes `gemini-3.1-pro` to synthesize a self-contained `pytest` test and unified diff patch; executes in an isolated sandbox verifying clean application. |
-| **`review_code_patch_with_claude`** | Invokes `claude-3-5-sonnet` to perform an independent, unbiased peer code review auditing security (CWE-476, CWE-89), type safety, and edge cases. |
+| **`review_code_patch_with_claude`** | Invokes `claude-sonnet-4-6` via Google Cloud Vertex AI (`global` location) to perform an independent, unbiased peer code review auditing security (CWE-476, CWE-89), type safety, and edge cases. |
 | **`render_a2ui_review_card`** | Generates declarative A2UI review cards displaying the diff patch, reproduction code, Claude review verdict, and one-click action buttons. |
 | **`create_draft_pull_request`** | Pushes a verified branch and opens a Draft Pull Request on GitHub embedding the Claude Review Badge and sandbox execution proof. |
 

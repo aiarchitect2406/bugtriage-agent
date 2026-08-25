@@ -27,7 +27,8 @@ class Config:
     # Model Routing Constants (Vertex AI & Multi-Model Ensemble)
     FAST_MODEL: str = os.getenv("FAST_MODEL", "gemini-3.7-flash")
     REASONING_MODEL: str = os.getenv("REASONING_MODEL", "gemini-3.1-pro-preview")
-    REVIEWER_MODEL: str = os.getenv("REVIEWER_MODEL", "claude-3-5-sonnet-20241022")
+    REVIEWER_MODEL: str = os.getenv("REVIEWER_MODEL", "claude-sonnet-4-6")
+    ANTHROPIC_LOCATION: str = os.getenv("ANTHROPIC_LOCATION", "global")
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     
     # Session & Memory
