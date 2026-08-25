@@ -161,15 +161,17 @@ def review_node(ctx: Context, node_input: Any) -> Event:
     ctx.state["review_result"] = review_res
     return Event(output=review_res)
 
+from google.adk.events.request_input import RequestInput
+
 @node
-def hitl_gate_node(ctx: Context, node_input: Any) -> Event:
-    """HITL Gateway Node: Pauses execution in state AWAITING_HUMAN_REVIEW and renders A2UI Card."""
+def hitl_gate_node(ctx: Context, node_input: Any):
+    """HITL Gateway Node: Native ADK 2.0 interrupt using RequestInput and persistent Session state."""
     sanitized = ctx.state.get("sanitized_report", {})
     enrichment = ctx.state.get("enrichment_context", {})
     remediation = ctx.state.get("remediation_result", {})
     review_res = ctx.state.get("review_result", {})
     
-    session_id = f"session-{uuid.uuid4().hex[:8]}"
+    session_id = ctx.session.id if ctx.session else f"session-{uuid.uuid4().hex[:8]}"
     issue_id = sanitized.get("issue_id", "BUG-UNKNOWN")
     repro = remediation.get("reproduction_test", {})
     fix = remediation.get("fix_patch", {})
@@ -188,9 +190,7 @@ def hitl_gate_node(ctx: Context, node_input: Any) -> Event:
         claude_review=review_res
     )
     
-    HITLStateStore.save_paused_state(gate_state)
     a2ui_card = render_a2ui_review_card(gate_state)
-    HITLStateStore.compact_session_history(session_id)
     HITLStateStore.async_consolidate_memory(session_id)
     
     output = {
@@ -208,7 +208,22 @@ def hitl_gate_node(ctx: Context, node_input: Any) -> Event:
         "a2ui_card": a2ui_card,
     }
     
-    return Event(output=output)
+    # Check if workflow is being resumed with human review decision
+    if not ctx.resume_inputs or "hitl_approval_gate" not in ctx.resume_inputs:
+        yield RequestInput(
+            interrupt_id="hitl_approval_gate",
+            message=f"Awaiting human approval for fix patch on {issue_id}"
+        )
+        return
+
+    # Process resume decision from developer
+    decision = ctx.resume_inputs.get("hitl_approval_gate", {})
+    action = decision if isinstance(decision, str) else decision.get("action", "APPROVE")
+    
+    if action.upper() == "APPROVE":
+        yield Event(output=output, route="approved")
+    else:
+        yield Event(output=output, route="rejected")
 
 @node
 def create_pr_node(ctx: Context, node_input: Any) -> Dict[str, Any]:

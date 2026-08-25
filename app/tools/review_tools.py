@@ -75,7 +75,8 @@ File Modified: {target_file_path}
         from anthropic import AnthropicVertex
         vertex_client = AnthropicVertex(
             region=Config.ANTHROPIC_LOCATION,
-            project_id=Config.PROJECT_ID
+            project_id=Config.PROJECT_ID,
+            timeout=5.0,
         )
         target_model = model_name
         response = vertex_client.messages.create(

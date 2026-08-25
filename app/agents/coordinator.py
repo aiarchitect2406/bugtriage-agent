@@ -181,11 +181,7 @@ class TriageCoordinator:
             claude_review=code_review_info,
         )
         
-        HITLStateStore.save_paused_state(gate_state)
         a2ui_card = render_a2ui_review_card(gate_state)
-
-        # Context Compaction & Non-blocking Memory consolidation
-        HITLStateStore.compact_session_history(session_id, max_tokens=4096)
         HITLStateStore.async_consolidate_memory(session_id)
 
         return {

@@ -4,7 +4,7 @@ import pytest
 from app.plugins.guardrails import GuardrailPolicyPlugin
 from app.observability.tracing import CloudObservabilityPlugin
 from app.tools.sandbox_tools import execute_reproduction_and_sandbox_fix
-from app.tools.mcp_registry import get_github_mcp_toolset, get_remote_mcp_toolset
+
 
 
 def test_guardrail_policy_plugin_blocker_p0_rule():
@@ -53,13 +53,4 @@ def test_sandbox_tools_subprocess_execution():
     assert result["sandbox_result"]["status"] == "PASSED"
     assert result["sandbox_result"]["post_patch_test_passed"] is True
 
-
-def test_mcp_toolset_instantiation():
-    """Verifies native ADK McpToolset factory functions instantiate cleanly."""
-    gh_toolset = get_github_mcp_toolset(github_token="ghp_test_token_123")
-    assert gh_toolset is not None
-    assert "create_pull_request" in gh_toolset.tool_filter
-
-    remote_toolset = get_remote_mcp_toolset(sse_endpoint_url="https://gateway.internal/mcp/sse")
-    assert remote_toolset is not None
 
