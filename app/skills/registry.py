@@ -53,6 +53,7 @@ class DynamicSkillRegistry:
             resolve_codeowners_and_blame,
             execute_reproduction_and_sandbox_fix,
             create_draft_pull_request,
+            review_code_patch_with_claude,
         )
         from app.hitl.card_renderer import render_a2ui_review_card
 
@@ -63,6 +64,7 @@ class DynamicSkillRegistry:
             "execute_reproduction_and_sandbox_fix": execute_reproduction_and_sandbox_fix,
             "render_a2ui_review_card": render_a2ui_review_card,
             "create_draft_pull_request": create_draft_pull_request,
+            "review_code_patch_with_claude": review_code_patch_with_claude,
         }
 
     def discover_skills(self, search_dirs: Optional[List[str]] = None) -> Dict[str, SkillDescriptor]:

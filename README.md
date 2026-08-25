@@ -39,6 +39,8 @@ In high-velocity engineering organizations and shared microservice platforms, so
 
 ## 2. Reference Architecture
 
+The diagram below illustrates the end-to-end bug triage and remediation lifecycle, featuring the **Multi-Model Maker-Checker (Gemini + Claude)** verification pattern:
+
 ```mermaid
 flowchart LR
     subgraph S1["1. Monitored Service"]
@@ -55,7 +57,7 @@ flowchart LR
         Webhook -->|"3. Dispatches"| Coordinator
     end
 
-    subgraph S3["3. Multi-Agent Pipeline"]
+    subgraph S3["3. Triage & Enrichment"]
         direction TB
         DLP["🛡️ Ingestion (Cloud DLP)<br/>PII & Secret Redaction"]
         Dedupe["🔍 Dedupe (Vector Index)<br/>Cosine Similarity Check"]
@@ -63,99 +65,116 @@ flowchart LR
         DLP --> Dedupe --> Enrich
     end
 
-    subgraph S4["4. Isolated Sandbox"]
+    subgraph S4["4. Dual-Model Sandbox & Peer Review"]
         direction TB
-        Remediate["⚙️ Code Remediation<br/>(Gemini 3.1 Pro)"]
-        Sandbox["🧪 Ephemeral Sandbox<br/>• Pytest Repro (Fails)<br/>• Unified Diff Patch<br/>• Pytest Pass (100%)<br/>• Purges Sandbox State"]
-        Remediate <-->|"Runs Tests"| Sandbox
+        Maker["⚙️ Maker: Gemini 3.1 Pro<br/>Synthesizes Repro Test & Fix"]
+        Sandbox["🧪 Ephemeral Sandbox<br/>• Pytest Repro (Fails)<br/>• Unified Diff Applied<br/>• Pytest Pass (100%)"]
+        Reviewer["🛡️ Checker: Claude Sonnet<br/>• Unbiased Peer Audit<br/>• Security (CWE-476, CWE-89)<br/>• LGTM Review Badge"]
+        
+        Maker <-->|"Runs Tests"| Sandbox
+        Sandbox -->|"Passes Diff"| Reviewer
+        Reviewer -.->|"Feedback Loop"| Maker
     end
 
     subgraph S5["5. Human-in-the-Loop"]
         direction TB
-        A2UI["📑 A2UI Review Card<br/>Paused: AWAITING_HUMAN_REVIEW<br/>'Vibe Diff' & Test Proof"]
-        Engineer(["👨‍💻 Lead Engineer<br/>Reviews & Signs HMAC"])
+        A2UI["📑 A2UI Review Card<br/>Paused: AWAITING_HUMAN_REVIEW<br/>Diff, Test Proof & Claude Badge"]
+        Engineer(["👨‍💻 Lead Engineer<br/>Reviews Verified PR & Signs HMAC"])
         Engineer -->|"5. Approves"| A2UI
     end
 
     subgraph S6["6. PR Delivery"]
         direction TB
         GitTool["🚀 Git PR Tool<br/>Pushes branch fix/bug-..."]
-        DraftPR["🔀 GitHub Draft PR<br/>Opened on <b>example-payment-svc</b>"]
+        DraftPR["🔀 GitHub Draft PR<br/>Opened on <b>example-payment-svc</b><br/>Includes Claude Review Proof"]
         GitTool -->|"6. Creates PR"| DraftPR
     end
 
     TargetRepo -->|"2. Webhook"| Webhook
     Coordinator -->|"Runs DAG"| DLP
-    Enrich -->|"Passes Context"| Remediate
-    Sandbox -->|"4. Review Card"| A2UI
-    A2UI -->|"On Approval"| GitTool
+    Enrich -->|"Passes Context"| Maker
+    Reviewer -->|"4. On LGTM Approval"| A2UI
+    A2UI -->|"On Signoff"| GitTool
 ```
 
 ### End-to-End Workflow Breakdown
 
-| Stage | Component | What Happens |
-| :--- | :--- | :--- |
-| **1. Issue Ingestion** | **Target Microservice** | Developer or user reports a crash on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with stack traces and crash logs. |
-| **2. Direct Webhook** | **ADK Agent Runtime** | GitHub dispatches an event to the built-in FastAPI endpoint (`POST /webhooks/github/issues`), initiating the ADK multi-agent DAG. |
-| **3. PII Sanitization** | **IngestionAgent** | Cloud DLP scrubs leaked API keys, credentials, and customer emails before any reasoning or logging occurs. |
-| **4. Vector Dedupe** | **DedupeAgent** | Error signatures are compared against historical vectors using cosine similarity ($\ge 0.85$). Duplicate issues link to active parents; unique issues proceed. |
-| **5. Ownership & SLA** | **EnrichmentAgent** | Evaluates `.github/CODEOWNERS` and Git blame history to assign the ticket to `@payments-team` with a `P0` Blocker SLA. |
-| **6. Ephemeral Sandbox** | **CodeRemediationAgent** | An isolated sandbox workspace is dynamically provisioned in `/tmp/geap_agent_sandbox_*`. It clones the repository, writes a `pytest` reproduction test, verifies failure, synthesizes a fix with `gemini-3.1-pro`, verifies the test passes 100%, and purges all temporary files. |
-| **7. HITL Gate** | **A2UI Review Card** | The pipeline pauses in `AWAITING_HUMAN_REVIEW`. An interactive card with the diff and test proof is presented for engineer review and HMAC signoff. |
-| **8. Automated Draft PR** | **Git PR Tool** | Upon approval, the agent pushes the fix branch and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) for final team review and merge. |
+| Stage | Component | Model / Engine | What Happens |
+| :--- | :--- | :--- | :--- |
+| **1. Issue Ingestion** | **Target Microservice** | Developer / User | Developer reports a crash on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with stack traces and crash logs. |
+| **2. Direct Webhook** | **ADK Agent Runtime** | Fast API Gateway | GitHub dispatches an event to the built-in FastAPI endpoint (`POST /webhooks/github/issues`), initiating the ADK multi-agent DAG. |
+| **3. PII Sanitization** | **IngestionAgent** | `gemini-3.7-flash` + DLP | Cloud DLP scrubs leaked API keys, credentials, and customer emails before any reasoning or logging occurs. |
+| **4. Vector Dedupe** | **DedupeAgent** | Vector Embeddings | Error signatures are compared against historical vectors using cosine similarity ($\ge 0.85$). Duplicate issues link to active parents; unique issues proceed. |
+| **5. Ownership & SLA** | **EnrichmentAgent** | `gemini-3.7-flash` | Evaluates `.github/CODEOWNERS` and Git blame history to assign the ticket to `@payments-team` with a `P0` Blocker SLA. |
+| **6. Maker Fix Synthesis** | **CodeRemediationAgent** | `gemini-3.1-pro` | An isolated sandbox workspace (`/tmp/geap_agent_sandbox_*`) clones the repo, writes a `pytest` reproduction test, confirms failure, generates a diff patch, and verifies 100% test pass. |
+| **7. Checker Peer Review** | **CodeReviewAgent** | `claude-3-5-sonnet` | An unbiased, independent review subagent inspects the diff and test suite for CWE security (CWE-476, CWE-89), type safety, and edge cases, issuing a formal score (e.g. 96/100) and review badge. |
+| **8. HITL Gate** | **A2UI Review Card** | Interactive UI | The pipeline pauses in `AWAITING_HUMAN_REVIEW`. An interactive card with the diff, sandbox test proof, and Claude Review Badge is presented for engineer review. |
+| **9. Automated Draft PR** | **Git PR Tool** | GitHub API | Upon approval, the agent pushes the fix branch and opens a Draft Pull Request on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) with peer review metadata attached. |
 
 ---
 
 ## 3. Multi-Agent Architecture & Pipeline DAG
 
-The system implements a **Coordinator-Worker DAG** pattern using Google ADK 2.0:
-
+The system implements a **Coordinator-Worker DAG with Maker-Checker Peer Review** using Google ADK 2.0:
 
 ```
-                               ┌────────────────────────────────────────────────┐
-                               │   TriageCoordinator (gemini-3.7-flash)         │
-                               │   - Orchestrates multi-agent execution DAG     │
-                               │   - Enforces GuardrailPolicyPlugin SLA rules   │
-                               │   - Manages persistent session state           │
-                               └───────┬──────────────┬──────────────┬──────────┘
-                                       │              │              │
-                    ┌──────────────────┘              │              └──────────────────┐
-                    ▼                                 ▼                                 ▼
-       ┌─────────────────────────┐       ┌─────────────────────────┐       ┌─────────────────────────┐
-       │     IngestionAgent      │       │       DedupeAgent       │       │     EnrichmentAgent     │
-       │   (gemini-3.7-flash)    │       │   (gemini-3.7-flash)    │       │   (gemini-3.7-flash)    │
-       ├─────────────────────────┤       ├─────────────────────────┤       ├─────────────────────────┤
-       │ • Scrub PII via DLP API │       │ • Generate embeddings   │       │ • Match .github/        │
-       │ • Parse stack frames    │       │ • Cosine similarity     │       │   CODEOWNERS            │
-       │ • Extract error type    │       │ • Link duplicate parent │       │ • Git blame lines       │
-       └─────────────────────────┘       └─────────────────────────┘       │ • Calculate SLA (P0-P3) │
-                                                                           └────────────┬────────────┘
-                                                                                        │
-                                                                                        ▼
-                                                                           ┌─────────────────────────┐
-                                                                           │  CodeRemediationAgent   │
-                                                                           │    (gemini-3.1-pro)     │
-                                                                           ├─────────────────────────┤
-                                                                           │ • Deep stack reasoning  │
-                                                                           │ • Synthesize repro test │
-                                                                           │ • Generate diff patch   │
-                                                                           │ • Verify in sandbox     │
-                                                                           └────────────┬────────────┘
-                                                                                        │
-                                                                                        ▼
-                                                                           ┌─────────────────────────┐
-                                                                           │  HITL Gateway & A2UI    │
-                                                                           ├─────────────────────────┤
-                                                                           │ • Pause session state   │
-                                                                           │ • Render review cards   │
-                                                                           │ • Verify HMAC signoff   │
-                                                                           │ • Open Draft GitHub PR  │
-                                                                           └─────────────────────────┘
+                                ┌────────────────────────────────────────────────┐
+                                │   TriageCoordinator (gemini-3.7-flash)         │
+                                │   - Orchestrates multi-agent execution DAG     │
+                                │   - Enforces GuardrailPolicyPlugin SLA rules   │
+                                │   - Manages persistent session state           │
+                                └───────┬──────────────┬──────────────┬──────────┘
+                                        │              │              │
+                     ┌──────────────────┘              │              └──────────────────┐
+                     ▼                                 ▼                                 ▼
+        ┌─────────────────────────┐       ┌─────────────────────────┐       ┌─────────────────────────┐
+        │     IngestionAgent      │       │       DedupeAgent       │       │     EnrichmentAgent     │
+        │   (gemini-3.7-flash)    │       │   (gemini-3.7-flash)    │       │   (gemini-3.7-flash)    │
+        ├─────────────────────────┤       ├─────────────────────────┤       ├─────────────────────────┤
+        │ • Scrub PII via DLP API │       │ • Generate embeddings   │       │ • Match .github/        │
+        │ • Parse stack frames    │       │ • Cosine similarity     │       │   CODEOWNERS            │
+        │ • Extract error type    │       │ • Link duplicate parent │       │ • Git blame lines       │
+        └─────────────────────────┘       └─────────────────────────┘       │ • Calculate SLA (P0-P3) │
+                                                                            └────────────┬────────────┘
+                                                                                         │
+                                                                                         ▼
+                                                                            ┌─────────────────────────┐
+                                                                            │  CodeRemediationAgent   │
+                                                                            │    (gemini-3.1-pro)     │
+                                                                            │       [MAKER]           │
+                                                                            ├─────────────────────────┤
+                                                                            │ • Deep stack reasoning  │
+                                                                            │ • Synthesize repro test │
+                                                                            │ • Generate diff patch   │
+                                                                            │ • 100% Sandbox pytest   │
+                                                                            └────────────┬────────────┘
+                                                                                         │
+                                                                                         ▼
+                                                                            ┌─────────────────────────┐
+                                                                            │     CodeReviewAgent     │
+                                                                            │   (claude-3-5-sonnet)   │
+                                                                            │       [CHECKER]         │
+                                                                            ├─────────────────────────┤
+                                                                            │ • Unbiased peer review  │
+                                                                            │ • Security audit (CWE)  │
+                                                                            │ • Edge case validation  │
+                                                                            │ • Quality score & badge │
+                                                                            └────────────┬────────────┘
+                                                                                         │
+                                                                                         ▼
+                                                                            ┌─────────────────────────┐
+                                                                            │  HITL Gateway & A2UI    │
+                                                                            ├─────────────────────────┤
+                                                                            │ • Pause session state   │
+                                                                            │ • Render review cards   │
+                                                                            │ • Verify HMAC signoff   │
+                                                                            │ • Open Draft GitHub PR  │
+                                                                            └─────────────────────────┘
 ```
 
 ---
 
-## 3. Dynamic Tooling & Capabilities
+## 4. Dynamic Tooling & Capabilities
 
 The agent equips modular, typed functional tools adhering to Google ADK 2.0 specifications:
 
@@ -165,8 +184,9 @@ The agent equips modular, typed functional tools adhering to Google ADK 2.0 spec
 | **`query_similar_bugs_by_vector`** | Computes vector cosine similarity against historical open issues. Suppresses duplicate notification spam when similarity exceeds $0.85$. |
 | **`resolve_codeowners_and_blame`** | Parses `.github/CODEOWNERS` and `git blame` history from disk to route the ticket to the responsible engineering team on Attempt #1. |
 | **`execute_reproduction_and_sandbox_fix`** | Invokes `gemini-3.1-pro` to synthesize a self-contained `pytest` test and unified diff patch; executes in an isolated sandbox verifying clean application. |
-| **`render_a2ui_review_card`** | Generates declarative A2UI review cards displaying the diff patch, reproduction code, and one-click action buttons (`APPROVE`, `MODIFY`, `REJECT`). |
-| **`create_draft_pull_request`** | Pushes a verified branch and opens a Draft Pull Request on GitHub using the GEAP Managed Agent Identity. |
+| **`review_code_patch_with_claude`** | Invokes `claude-3-5-sonnet` to perform an independent, unbiased peer code review auditing security (CWE-476, CWE-89), type safety, and edge cases. |
+| **`render_a2ui_review_card`** | Generates declarative A2UI review cards displaying the diff patch, reproduction code, Claude review verdict, and one-click action buttons. |
+| **`create_draft_pull_request`** | Pushes a verified branch and opens a Draft Pull Request on GitHub embedding the Claude Review Badge and sandbox execution proof. |
 
 ---
 

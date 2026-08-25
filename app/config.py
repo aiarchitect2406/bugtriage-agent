@@ -24,9 +24,11 @@ class Config:
     PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "nithin-usbaws-aiml-solns-demos"))
     LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
     
-    # Model Routing Constants (Vertex AI supported models)
+    # Model Routing Constants (Vertex AI & Multi-Model Ensemble)
     FAST_MODEL: str = os.getenv("FAST_MODEL", "gemini-3.7-flash")
     REASONING_MODEL: str = os.getenv("REASONING_MODEL", "gemini-3.1-pro-preview")
+    REVIEWER_MODEL: str = os.getenv("REVIEWER_MODEL", "claude-3-5-sonnet-20241022")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     
     # Session & Memory
     SESSIONS_ID: str = os.getenv("SESSIONS_ID", "bug-triage-sessions-v1")

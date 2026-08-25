@@ -14,6 +14,7 @@ from app.agents.ingestion import ingestion_agent, IngestionAgentRunner
 from app.agents.dedupe import dedupe_agent, DedupeAgentRunner
 from app.agents.enrichment import enrichment_agent, EnrichmentAgentRunner
 from app.agents.remediation import remediation_agent, CodeRemediationAgentRunner
+from app.agents.review import code_review_agent, CodeReviewAgentRunner
 from app.plugins.guardrails import GuardrailPolicyPlugin
 from app.hitl.state_store import HITLStateStore, generate_memories_callback
 from app.hitl.card_renderer import render_a2ui_review_card
@@ -24,6 +25,7 @@ from app.tools import (
     resolve_codeowners_and_blame,
     execute_reproduction_and_sandbox_fix,
     create_draft_pull_request,
+    review_code_patch_with_claude,
 )
 
 from app.skills.registry import DynamicSkillRegistry
@@ -31,7 +33,7 @@ from app.skills.registry import DynamicSkillRegistry
 skill_registry = DynamicSkillRegistry()
 
 COORDINATOR_AGENT_CONSTITUTION = f"""
-You are the Lead Bug Triage Coordinator Agent.
+You are the Lead Bug Triage Coordinator Agent implementing Maker-Checker multi-model orchestration.
 
 Progressive Disclosure Architecture:
 To prevent context window bloat and reasoning degradation, do not pre-load all tool definitions and subagent instructions.
@@ -45,8 +47,9 @@ Strict Operational Workflow:
    - CRITICAL RULE: If `is_duplicate` is True, STOP IMMEDIATELY. Do not enrich, do not remediate, and do not create pull requests. Return:
      "Triage outcome: Status DUPLICATE_LINKED. Parent Ticket: <parent_ticket>. Similarity Score >= 0.85."
 3. ENRICHMENT (Skill: 'ownership-routing'): Find CODEOWNERS, calculate SLA priority.
-4. REMEDIATION (Skill: 'sandbox-remediation'): Synthesize reproduction pytest in isolated subprocess sandbox and verify patch.
-5. HITL REVIEW GATE (Skill: 'hitl-pull-request'): Pause at `AWAITING_HUMAN_REVIEW` with A2UI review card.
+4. REMEDIATION [MAKER] (Skill: 'sandbox-remediation'): Synthesize reproduction pytest in isolated subprocess sandbox with Gemini 3.1 Pro.
+5. PEER REVIEW [CHECKER] (Skill: 'peer-code-review-claude'): Conduct independent code & security audit using Claude Sonnet.
+6. HITL REVIEW & PR (Skill: 'hitl-pull-request'): Prepare high-confidence Draft Pull Request with Claude review badge.
 """
 
 coordinator_agent = Agent(
@@ -62,12 +65,14 @@ coordinator_agent = Agent(
         resolve_codeowners_and_blame,
         execute_reproduction_and_sandbox_fix,
         create_draft_pull_request,
+        review_code_patch_with_claude,
     ],
     sub_agents=[
         ingestion_agent,
         dedupe_agent,
         enrichment_agent,
         remediation_agent,
+        code_review_agent,
     ],
     after_agent_callback=generate_memories_callback,
 )
@@ -82,6 +87,7 @@ class TriageCoordinator:
         self.dedupe_runner = DedupeAgentRunner(self.logger)
         self.enrichment_runner = EnrichmentAgentRunner(self.logger)
         self.remediation_runner = CodeRemediationAgentRunner(self.logger)
+        self.review_runner = CodeReviewAgentRunner(self.logger)
         self.guardrail_plugin = GuardrailPolicyPlugin()
         self.agent = coordinator_agent
 
@@ -146,7 +152,7 @@ class TriageCoordinator:
                 "issue_id": sanitized_report.issue_id
             }
 
-        # Step 5: Code Remediation & Sandbox Fix
+        # Step 5: Code Remediation & Sandbox Fix (Maker: Gemini 3.1 Pro)
         remed_res = self.remediation_runner.generate_remediation_and_sandbox_fix(
             sanitized_report,
             enrichment_context,
@@ -158,6 +164,17 @@ class TriageCoordinator:
         repro_test = remed_res.get("reproduction_test", {})
         fix_patch = remed_res.get("fix_patch", {})
         sandbox_res = remed_res.get("sandbox_result", {})
+
+        # Step 5.5: Independent Peer Code Review (Checker: Claude Sonnet)
+        review_res = self.review_runner.review_patch(
+            sanitized_report=sanitized_report,
+            enrichment_context=enrichment_context,
+            diff_patch=fix_patch.get("diff_patch", ""),
+            patch_explanation=fix_patch.get("explanation", ""),
+            reproduction_test_code=repro_test.get("test_code", ""),
+            request_id=req_id
+        )
+        code_review_info = review_res
 
         # Step 6: Human-in-the-Loop Gateway Pause
         gate_state = HITLGateState(
@@ -190,5 +207,6 @@ class TriageCoordinator:
             "sandbox_status": sandbox_res.get("status"),
             "proposed_diff_patch": fix_patch.get("diff_patch"),
             "failing_test_code": repro_test.get("test_code"),
+            "code_review": code_review_info,
             "a2ui_card": a2ui_card,
         }

@@ -25,6 +25,9 @@ from app.tools.git_tools import (
     CreateDraftPRInput,
     CreateDraftPROutput,
 )
+from app.tools.review_tools import (
+    review_code_patch_with_claude,
+)
 
 __all__ = [
     "sanitize_logs_and_extract_stack",
@@ -42,4 +45,6 @@ __all__ = [
     "create_draft_pull_request",
     "CreateDraftPRInput",
     "CreateDraftPROutput",
+    "review_code_patch_with_claude",
 ]
+
