@@ -40,7 +40,7 @@ In high-velocity engineering organizations and shared microservice platforms, so
 ## 2. Reference Architecture
 
 ```mermaid
-flowchart TD
+flowchart LR
     classDef repo fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px;
     classDef runtime fill:#e6f4ea,stroke:#137333,stroke-width:2px;
     classDef agents fill:#fef7e0,stroke:#b06000,stroke-width:2px;
@@ -48,60 +48,60 @@ flowchart TD
     classDef hitl fill:#f3e8fd,stroke:#7627bb,stroke-width:2px;
     classDef output fill:#e8eaed,stroke:#5f6368,stroke-width:2px;
 
-    subgraph UserFlow ["1. Monitored Service & Issue Ingestion"]
-        User(["👤 End User / Developer<br/>Reports Crash or Bug"])
-        TargetRepo["📦 GitHub Target Repository<br/><b>aiarchitect2406/example-payment-svc</b><br/>• services/payment_gateway.py<br/>• .github/CODEOWNERS"]
-        User -->|"1. Opens Issue with logs"| TargetRepo
+    subgraph S1["1. Monitored Service"]
+        direction TB
+        User(["👤 Developer / User<br/>Reports Crash"])
+        TargetRepo["📦 GitHub Target Repo<br/><b>example-payment-svc</b>"]
+        User -->|"1. Opens Issue"| TargetRepo
     end
 
-    subgraph IngressLayer ["2. ADK Agent Runtime (Built-in FastAPI)"]
-        WebhookHandler["⚡ GitHub Issue Webhook<br/><b>POST /webhooks/github/issues</b><br/>Direct event listener on ADK FastAPI"]
-        Coordinator["🧠 ADK Triage Coordinator<br/>(Gemini 3.7 Flash)<br/>Orchestrates multi-agent execution DAG"]
-        TargetRepo -->|"2. Dispatches webhook event"| WebhookHandler
-        WebhookHandler -->|"3. Triggers triage run"| Coordinator
+    subgraph S2["2. ADK Agent Runtime"]
+        direction TB
+        Webhook["⚡ Built-in Webhook<br/><b>POST /webhooks/github/issues</b>"]
+        Coordinator["🧠 ADK Coordinator<br/>(Gemini 3.7 Flash)"]
+        Webhook -->|"3. Dispatches"| Coordinator
     end
 
-    subgraph AgentPipeline ["3. Multi-Agent Analysis Pipeline"]
-        DLP["🛡️ IngestionAgent<br/>Cloud DLP scrubs API keys & customer PII"]
-        Dedupe["🔍 DedupeAgent<br/>Vector embeddings deduplication (Vertex AI)"]
-        Ownership["📋 EnrichmentAgent<br/>Resolves .github/CODEOWNERS & assigns SLA"]
-        PolicyServer["🔒 Zero-Trust Policy Server<br/>Issues SPIFFE token & gates tool execution"]
-
-        Coordinator --> DLP
-        DLP --> Dedupe
-        Dedupe -->|"Unique Bug"| Ownership
-        Ownership --> PolicyServer
+    subgraph S3["3. Multi-Agent Pipeline"]
+        direction TB
+        DLP["🛡️ Ingestion (Cloud DLP)<br/>PII & Secret Redaction"]
+        Dedupe["🔍 Dedupe (Vector Index)<br/>Cosine Similarity Check"]
+        Enrich["📋 Enrichment & SLA<br/>CODEOWNERS: @payments-team"]
+        DLP --> Dedupe --> Enrich
     end
 
-    subgraph SandboxLayer ["4. Isolated Ephemeral Sandbox"]
-        Remediation["⚙️ CodeRemediationAgent<br/>Gemini 3.1 Pro code reasoning"]
-        Sandbox["🧪 Ephemeral Agent Sandbox<br/>(/tmp/geap_agent_sandbox_*)<br/>• Clones example-payment-svc<br/>• Synthesizes pytest repro test (fails)<br/>• Applies unified diff patch<br/>• Re-runs pytest (100% passes)<br/>• Purges all sandbox state"]
-
-        PolicyServer --> Remediation
-        Remediation <-->|"Executes test & verifies fix"| Sandbox
+    subgraph S4["4. Isolated Sandbox"]
+        direction TB
+        Remediate["⚙️ Code Remediation<br/>(Gemini 3.1 Pro)"]
+        Sandbox["🧪 Ephemeral Sandbox<br/>• Pytest Repro (Fails)<br/>• Unified Diff Patch<br/>• Pytest Pass (100%)<br/>• Purges Sandbox State"]
+        Remediate <-->|"Runs Tests"| Sandbox
     end
 
-    subgraph HITLLayer ["5. Human-in-the-Loop Review"]
-        A2UICard["📑 A2UI Review Card<br/>Paused in AWAITING_HUMAN_REVIEW<br/>Displays unified diff & pytest proof"]
-        Engineer(["👨‍💻 Lead Engineer<br/>Reviews diff & clicks Approve"])
-
-        Sandbox -->|"Publishes review artifact"| A2UICard
-        Engineer -->|"4. Signs off via HMAC token"| A2UICard
+    subgraph S5["5. Human-in-the-Loop"]
+        direction TB
+        A2UI["📑 A2UI Review Card<br/>Paused: AWAITING_HUMAN_REVIEW<br/>'Vibe Diff' & Test Proof"]
+        Engineer(["👨‍💻 Lead Engineer<br/>Reviews & Signs HMAC"])
+        Engineer -->|"5. Approves"| A2UI
     end
 
-    subgraph EgressLayer ["6. Pull Request Delivery"]
+    subgraph S6["6. PR Delivery"]
+        direction TB
         GitTool["🚀 Git PR Tool<br/>Pushes branch fix/bug-..."]
-        DraftPR["🔀 GitHub Draft Pull Request<br/>Opened on <b>example-payment-svc</b><br/>Assigned to @payments-team"]
-
-        A2UICard -->|"5. Triggers automated PR"| GitTool
-        GitTool -->|"6. Creates Draft PR"| DraftPR
+        DraftPR["🔀 GitHub Draft PR<br/>Opened on <b>example-payment-svc</b>"]
+        GitTool -->|"6. Creates PR"| DraftPR
     end
+
+    TargetRepo -->|"2. Webhook"| Webhook
+    Coordinator -->|"Runs DAG"| DLP
+    Enrich -->|"Passes Context"| Remediate
+    Sandbox -->|"4. Review Card"| A2UI
+    A2UI -->|"On Approval"| GitTool
 
     class User,TargetRepo repo;
-    class WebhookHandler,Coordinator runtime;
-    class DLP,Dedupe,Ownership,PolicyServer agents;
-    class Remediation,Sandbox sandbox;
-    class A2UICard,Engineer hitl;
+    class Webhook,Coordinator runtime;
+    class DLP,Dedupe,Enrich agents;
+    class Remediate,Sandbox sandbox;
+    class A2UI,Engineer hitl;
     class GitTool,DraftPR output;
 ```
 
