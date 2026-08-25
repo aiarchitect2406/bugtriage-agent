@@ -1,0 +1,19 @@
+# CODEOWNERS for https://github.com/aiarchitect2406/bugtriage-agent
+
+# Default global owners for anything not matched
+* @aiarchitect2406/core-maintainers
+
+# Authentication & Security
+app/services/auth.py @security-team
+app/observability/ @security-team
+
+# Payments & Billing Checkout Services
+app/services/payment_checkout.py @payments-team
+app/services/billing.py @finance-eng
+
+# Core Agent Orchestration & Remediation
+app/agents/ @agents-lead
+app/tools/ @tools-eng
+
+# Human-in-the-Loop Gateway & Webhooks
+app/hitl/ @hitl-reviewers

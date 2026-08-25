@@ -1,0 +1,67 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "eval_case_001_blocker_checkout_npe",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Triage incoming alert BUG-2026-001: NullPointerException in PaymentGateway on checkout. Raw logs: 2026-08-04 12:00:01 ERROR app.services.payment - java.lang.NullPointerException: Address object is null at File \"app/services/payment_checkout.py\", line 42, in process_checkout token=secret_bearer_token_12345 user_email=john.doe@example.com"
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Triage outcome: Status AWAITING_HUMAN_REVIEW. Owner: @payments-team. Priority: P0 (Blocker, SLA 2h). PII Redacted: 2 tokens (token, email). Sandbox status: PASSED."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "eval_case_002_duplicate_checkout_npe",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Triage incoming alert BUG-2026-002: NullPointerException in PaymentGateway on checkout. Raw logs: 2026-08-04 12:05:10 ERROR app.services.payment - java.lang.NullPointerException: Address object is null at File \"app/services/payment_checkout.py\", line 42, in process_checkout"
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Triage outcome: Status DUPLICATE_LINKED. Parent Ticket: BUG-2026-001. Similarity Score >= 0.85."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "eval_case_003_major_auth_token_error",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Triage incoming alert BUG-2026-003: Invalid JWT signature on authenticated endpoints. Raw logs: 2026-08-04 12:10:00 ERROR app.services.auth - jwt.exceptions.DecodeError: Signature verification failed at File \"app/services/auth_token.py\", line 88, in verify_token token=jwt_sec_abc123"
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Triage outcome: Status AWAITING_HUMAN_REVIEW. Owner: @security-team. Priority: P1 (Major, SLA 24h). PII Redacted: 1 token (jwt secret). Sandbox status: PASSED."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

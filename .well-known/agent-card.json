@@ -1,0 +1,43 @@
+{
+  "name": "Autonomous Bug Triage & Auto-Remediation Coordinator",
+  "description": "Enterprise-grade autonomous bug triage and remediation agent for Google ADK 2.0 and Gemini Enterprise Agent Platform. Performs automated log sanitization, Cloud DLP PII scrubbing, vector deduplication, CODEOWNERS routing, pytest sandbox reproduction, and HITL gated pull request synthesis.",
+  "version": "1.0.0",
+  "protocols": ["a2a/v1", "adk/v2"],
+  "models": {
+    "coordinator": "gemini-3.7-flash",
+    "remediation": "gemini-3.1-pro-preview"
+  },
+  "skills": [
+    {
+      "name": "log-sanitization-dlp",
+      "description": "Sanitizes crash logs, extracts stack frames, and redacts PII via Google Cloud Sensitive Data Protection.",
+      "tools": ["sanitize_logs_and_extract_stack"]
+    },
+    {
+      "name": "vector-deduplication",
+      "description": "Identifies duplicate defect tickets via vector cosine similarity matching.",
+      "tools": ["query_similar_bugs_by_vector"]
+    },
+    {
+      "name": "ownership-routing",
+      "description": "Resolves microservice code ownership via .github/CODEOWNERS and git blame; assigns SLA priorities.",
+      "tools": ["resolve_codeowners_and_blame"]
+    },
+    {
+      "name": "sandbox-remediation",
+      "description": "Synthesizes pytest reproduction unit tests and verified unified diff patches in an ephemeral sandbox.",
+      "tools": ["execute_reproduction_and_sandbox_fix"]
+    },
+    {
+      "name": "hitl-pull-request",
+      "description": "Renders A2UI review cards with 'The Vibe Diff' and opens GitHub draft pull requests upon developer signoff.",
+      "tools": ["render_a2ui_review_card", "create_draft_pull_request"]
+    }
+  ],
+  "endpoints": {
+    "a2a": "/a2a/app/v1",
+    "mcp": "/mcp/v1",
+    "hitl_webhook": "/api/v1/hitl/review-webhook",
+    "health": "/health"
+  }
+}

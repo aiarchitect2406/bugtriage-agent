@@ -1,0 +1,5 @@
+# Code Ownership rules for target_repo
+services/payment* @payments-team
+services/auth* @security-team
+services/database* @infra-team
+* @core-triage-team
