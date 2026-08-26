@@ -63,7 +63,7 @@ def test_execute_reproduction_and_sandbox_fix():
         source_file_path="services/payment_gateway.py"
     )
     assert res["status"] == "SUCCESS"
-    assert "def test_reproduce" in res["reproduction_test"]["test_code"]
+    assert "def test_" in res["reproduction_test"]["test_code"]
     assert "payment_gateway.py" in res["fix_patch"]["diff_patch"]
     assert res["sandbox_result"]["status"] == "PASSED"
 

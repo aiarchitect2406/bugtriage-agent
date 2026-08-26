@@ -12,13 +12,14 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 from pydantic import BaseModel, Field
 
+from app.config import Config
+from app.skills.registry_client import GeapSkillRegistryClient
 from app.tools.sanitize_tools import sanitize_logs_and_extract_stack
 from app.tools.vector_tools import query_similar_bugs_by_vector
 from app.tools.ownership_tools import resolve_codeowners_and_blame
 from app.tools.sandbox_tools import execute_reproduction_and_sandbox_fix
 from app.tools.review_tools import review_code_patch_with_claude
 from app.tools.git_tools import create_draft_pull_request
-from app.hitl.card_renderer import render_a2ui_review_card
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,8 @@ TOOL_REGISTRY: Dict[str, Callable] = {
     "execute_reproduction_and_sandbox_fix": execute_reproduction_and_sandbox_fix,
     "review_code_patch_with_claude": review_code_patch_with_claude,
     "create_draft_pull_request": create_draft_pull_request,
-    "render_a2ui_review_card": render_a2ui_review_card,
 }
+
 
 
 class SkillMetadata(BaseModel):
@@ -155,7 +156,6 @@ class SkillCatalog:
         tool_names = self._skills_cache[skill_name].tools
         return [TOOL_REGISTRY[t] for t in tool_names if t in TOOL_REGISTRY]
 
-
 # Global default instance
 _default_catalog = SkillCatalog()
 
@@ -165,7 +165,7 @@ def get_skill_catalog() -> SkillCatalog:
     return _default_catalog
 
 
-# Native ADK Tools for Progressive Disclosure (usable directly by LlmAgent)
+# Native Tools for Skill Discovery
 
 def discover_available_skills() -> List[Dict[str, Any]]:
     """ADK Tool: Discovers all available domain skills in the progressive disclosure catalog.

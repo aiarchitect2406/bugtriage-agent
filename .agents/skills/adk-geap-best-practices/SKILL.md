@@ -66,7 +66,7 @@ This skill defines the technical standards, architectural patterns, and implemen
 - Ensure clear task boundaries and structured input/output schemas between agents.
 
 ### 3.2 Strategic Model Routing
-- Use **`gemini-3.6-flash`** for high-throughput, low-latency classification, intake, vector similarity deduplication, and CODEOWNERS routing.
+- Use **`gemini-3.7-flash`** for high-throughput, low-latency classification, intake, vector similarity deduplication, and CODEOWNERS routing.
 - Use **`gemini-3.1-pro`** for deep reasoning tasks such as multi-file stack trace analysis, unit test synthesis, and git diff patch generation.
 
 ### 3.3 Guardrail Policy Plugins
@@ -133,7 +133,7 @@ This skill defines the technical standards, architectural patterns, and implemen
 - **Pairwise Comparison**: Neutralize ordering bias in qualitative evaluation by running prompt evaluations twice with swapped positions (Run 1: A vs B; Run 2: B vs A) and requiring structured JSON rubrics.
 
 ### 6.5 Zero-Trust Security, Hybrid Policy Gating & The Vibe Diff
-- **Sandbox & Supply Chain Defense**: Run all dynamically generated code and tests in ephemeral kernel-level isolated sandboxes (gVisor). Protect against slopsquatting by enforcing vetted package allowlists, SBOM scanning, and version pinning.
+- **Sandbox & Supply Chain Defense**: Run all dynamically generated code, forensic scripts, and tests strictly inside native **GEAP Agent Sandboxes** (`Code Execution` / `BuiltInCodeExecutor`). Protect against slopsquatting by enforcing vetted package allowlists, SBOM scanning, and version pinning.
 - **Zero Ambient Authority**: Assign unique SPIFFE Agent Identities, enforce Just-In-Time (JIT) downscoping, and use deny-by-default file-tree allowlists.
 - **Hybrid Policy Server**: Gate tool executions via Layer 1 Structural Gating (deterministic role/env checks) and Layer 2 Semantic Gating (secondary LLM PII/safety scan).
 - **The Vibe Diff**: For high-stakes HITL review checkpoints, render a plain-English intent summary side-by-side with original user instructions so reviewers can assess operational impact without approval fatigue.

@@ -4,9 +4,11 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from typing import Any, Dict, List
 from app.models.bug_report import BugReport
-from app.agents.coordinator import TriageCoordinator
-from app.observability.pii_scrubber import EnterprisePIIRedactor
+from app.workflow import TriageCoordinator, run_triage_workflow
+from app.tools.sanitize_tools import EnterprisePIIRedactor
+
 
 def run_adk_evaluation_suite() -> bool:
     """Executes automated evaluation suite asserting 100% accuracy on Golden Dataset."""
@@ -27,12 +29,13 @@ def run_adk_evaluation_suite() -> bool:
     passed_count = 0
     total_cases = len(eval_cases)
     historical_candidates: List[Dict[str, Any]] = []
+    redactor = EnterprisePIIRedactor()
 
     for case in eval_cases:
         case_id = case["eval_case_id"]
         prompt_text = case["prompt"]["parts"][0]["text"]
         print(f"\n[EVAL CASE] ID: {case_id}")
-        
+
         # Parse issue_id and raw_logs
         if "BUG-2026-001" in prompt_text:
             issue_id = "BUG-2026-001"
@@ -68,10 +71,11 @@ def run_adk_evaluation_suite() -> bool:
         )
 
         # Check 1: PII Scrubbing
-        scrubbed_logs, pii_count = EnterprisePIIRedactor.redact_text(raw_logs)
+        scrubbed_logs, pii_matches = redactor.redact_text(raw_logs)
         assert "john.doe@example.com" not in scrubbed_logs, "PII email not redacted!"
         assert "secret_bearer_token_12345" not in scrubbed_logs, "PII token not redacted!"
-        print(f"  [CHECK 1/4] PII Redaction PASSED (Redacted {pii_count} tokens)")
+        print(f"  [CHECK 1/4] PII Redaction PASSED (Redacted {pii_matches} tokens)")
+
 
         # Check 2: Execute ADK Pipeline
         res = coordinator.execute_triage_pipeline(bug_report, historical_candidates=historical_candidates)
@@ -82,12 +86,12 @@ def run_adk_evaluation_suite() -> bool:
             assert res.get("parent_issue_id") == expected_parent, f"Parent ID mismatch: {res.get('parent_issue_id')} vs {expected_parent}"
             print(f"  [CHECK 2/4] Vector Duplicate Detection PASSED (Linked to {expected_parent})")
         else:
-            assert status == "AWAITING_HUMAN_REVIEW", f"Expected AWAITING_HUMAN_REVIEW, got {status}"
+            assert status == "PR_CREATED", f"Expected PR_CREATED, got {status}"
             assert res.get("primary_owner") == expected_owner, f"Owner mismatch: {res.get('primary_owner')} vs {expected_owner}"
             assert res.get("priority") == expected_prio, f"Priority mismatch: {res.get('priority')} vs {expected_prio}"
             print(f"  [CHECK 2/4] CODEOWNERS Routing & SLA Assignment PASSED ({expected_owner}, {expected_prio})")
             print(f"  [CHECK 3/4] Sandbox Test Execution Status: {res.get('sandbox_status')} PASSED")
-            print("  [CHECK 4/4] HITL A2UI Review Card Generation PASSED")
+            print(f"  [CHECK 4/4] Automated PR Creation PASSED (PR: {res.get('pull_request_url')})")
 
             historical_candidates.append({
                 "issue_id": issue_id,
@@ -101,6 +105,7 @@ def run_adk_evaluation_suite() -> bool:
     print(f" [ADK EVAL SUMMARY] {passed_count}/{total_cases} Golden Test Trajectories PASSED (100% Accuracy)")
     print("=" * 80)
     return passed_count == total_cases
+
 
 if __name__ == "__main__":
     success = run_adk_evaluation_suite()

@@ -71,15 +71,8 @@ def query_similar_bugs_by_vector(
                 recovery_hint="Ensure bug_title and bug_description contain descriptive text."
             ).model_dump()
 
-        candidates = candidate_historical_bugs or []
-        if not candidates:
-            candidates = [
-                {
-                    "issue_id": "BUG-2026-001",
-                    "title": "NullPointerException in PaymentGateway on checkout",
-                    "description": "User reported NullPointerException when submitting checkout with empty address field."
-                }
-            ]
+        candidates = candidate_historical_bugs if candidate_historical_bugs is not None else []
+
 
         target_text = f"{bug_title} {bug_description}"
         target_vec = _compute_mock_embedding(target_text)

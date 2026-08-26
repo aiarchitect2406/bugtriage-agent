@@ -1,10 +1,77 @@
-"""ADK Tool for Bug Intake, PII Redaction, and Stack Frame Extraction."""
-
 import re
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field
+from app.config import Config
 from app.models.bug_report import BugReport, SanitizedBugReport, StackFrame
-from app.observability.pii_scrubber import EnterprisePIIRedactor
+
+logger = logging.getLogger(__name__)
+
+try:
+    from google.cloud import dlp_v2
+    HAS_DLP_API = True
+except ImportError:
+    HAS_DLP_API = False
+
+
+class EnterprisePIIRedactor:
+    """Scrubs sensitive PII (emails, tokens, passwords, IPs, credit cards) using Cloud DLP or regex fallback."""
+
+    EMAIL_REGEX = re.compile(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+')
+    API_KEY_REGEX = re.compile(r'(?:api_key|token|bearer|secret|password)[=:\s]+[A-Za-z0-9_\-]{12,}', re.IGNORECASE)
+    IPV4_REGEX = re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')
+    CREDIT_CARD_REGEX = re.compile(r'\b(?:\d[ -]*?){13,16}\b')
+
+    @classmethod
+    def redact_text(cls, text: str) -> Tuple[str, int]:
+        if not text:
+            return text, 0
+
+        redacted_count = 0
+        if HAS_DLP_API:
+            try:
+                dlp_client = dlp_v2.DlpServiceClient()
+                parent = f"projects/{Config.PROJECT_ID}"
+                info_types = [
+                    {"name": "EMAIL_ADDRESS"},
+                    {"name": "IP_ADDRESS"},
+                    {"name": "AUTH_TOKEN"},
+                    {"name": "CREDIT_CARD_NUMBER"},
+                    {"name": "API_KEY"},
+                ]
+                inspect_config = {"info_types": info_types}
+                deidentify_config = {
+                    "info_type_transformations": {
+                        "transformations": [
+                            {"primitive_transformation": {"replace_config": {"new_value": {"string_value": "[REDACTED_DLP]"}}}}
+                        ]
+                    }
+                }
+                item = {"value": text}
+                response = dlp_client.deidentify_content(
+                    request={
+                        "parent": parent,
+                        "deidentify_config": deidentify_config,
+                        "inspect_config": inspect_config,
+                        "item": item,
+                    }
+                )
+                if response.item and response.item.value:
+                    text = response.item.value
+                    if "[REDACTED_DLP]" in text:
+                        redacted_count += text.count("[REDACTED_DLP]")
+                    return text, redacted_count
+            except Exception as e:
+                logger.debug(f"Cloud DLP API unavailable, using regex fallback: {e}")
+
+        # Regex Fallback
+        text, n1 = cls.EMAIL_REGEX.subn("[REDACTED_EMAIL]", text)
+        text, n2 = cls.API_KEY_REGEX.subn("[REDACTED_SECRET]", text)
+        text, n3 = cls.IPV4_REGEX.subn("[REDACTED_IP]", text)
+        text, n4 = cls.CREDIT_CARD_REGEX.subn("[REDACTED_CC]", text)
+        redacted_count += (n1 + n2 + n3 + n4)
+        return text, redacted_count
+
 
 class SanitizeLogsInput(BaseModel):
     """Input payload for log sanitization and stack extraction."""
@@ -83,8 +150,23 @@ def sanitize_logs_and_extract_stack(
                 )
             )
 
+        # Fallback: Detect mentioned source file paths (e.g. services/settlement_engine.py)
+        if not stack_frames:
+            combined_text = f"{title}\n{description}\n{raw_logs}"
+            file_mentions = re.findall(r'(?:services|app|src|lib)/[a-zA-Z0-9_\-/]+\.py', combined_text)
+            for fm in file_mentions:
+                if not any(sf.file_path == fm for sf in stack_frames):
+                    stack_frames.append(
+                        StackFrame(
+                            file_path=fm,
+                            line_number=1,
+                            function_name="entrypoint",
+                            code_context=None
+                        )
+                    )
+
         # 3. Detect Exception Type
-        exc_match = re.search(r'([A-Za-z0-9_.]*(?:Exception|Error|Fault|NullPointer|TypeError|ValueError|KeyError))(?::|\s|$)', target_trace)
+        exc_match = re.search(r'([A-Za-z0-9_.]*(?:Exception|Error|Fault|NullPointer|TypeError|ValueError|KeyError|ZeroDivisionError))(?::|\s|$)', target_trace)
         detected_exc = exc_match.group(1).split(".")[-1] if exc_match else "UnknownException"
 
         sanitized_report = SanitizedBugReport(

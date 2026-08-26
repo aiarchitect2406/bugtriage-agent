@@ -9,9 +9,9 @@ This skill defines mandatory enterprise security, governance, and containment st
 
 ---
 
-## 1. Ephemeral Kernel-Level Sandbox Isolation
-- All dynamically generated code, code translation steps, and test executions must run in isolated, ephemeral sandboxes (gVisor).
-- Sandboxes must lack access to the host file system or network and must reset state completely between runs.
+## 1. GEAP Agent Sandbox Isolation
+- All dynamically generated code, forensic scripts, and test executions must run in isolated, ephemeral **GEAP Agent Sandboxes** (`Code Execution` / `BuiltInCodeExecutor`).
+- Sandboxes provide secure, isolated compute environments spawned to perform specific tasks, preventing unauthorized host access and resetting state between sessions.
 - **Supply Chain Defense**: Prevent slopsquatting by enforcing pre-approved package allowlists, strict version pinning, and SBOM scanning.
 
 ---

@@ -33,7 +33,7 @@ This skill provides testing, CI/CD, infrastructure, and agent protocol patterns 
 
   # Run local ADK Web UI or CLI chat
   adk web --port 8085 app
-  adk run app.agents.coordinator:root_agent
+  adk run app.agent:root_agent
   ```
 
 ---

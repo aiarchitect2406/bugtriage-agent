@@ -28,8 +28,26 @@ SLA_MATRIX = {
     "Trivial": {"priority": "P3", "sla_hours": 168}
 }
 
+def _ensure_repo_cloned():
+    target_repo_dir = Config.LOCAL_TARGET_REPO_PATH
+    github_token = os.getenv("GITHUB_TOKEN", "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")
+    repo = Config.TARGET_REPO_NAME
+    auth_clone_url = f"https://x-access-token:{github_token}@github.com/{repo}.git"
+    if not os.path.exists(os.path.join(target_repo_dir, ".git")):
+        try:
+            os.makedirs(target_repo_dir, exist_ok=True)
+            subprocess.run(["git", "clone", auth_clone_url, target_repo_dir], capture_output=True, timeout=30)
+        except Exception:
+            pass
+    else:
+        try:
+            subprocess.run(["git", "pull", "--rebase"], cwd=target_repo_dir, capture_output=True, timeout=15)
+        except Exception:
+            pass
+
 def _load_codeowners_rules() -> List[tuple[str, List[str]]]:
     """Loads CODEOWNERS rules dynamically from target repo .github/CODEOWNERS if available."""
+    _ensure_repo_cloned()
     codeowners_path = os.path.join(Config.LOCAL_TARGET_REPO_PATH, ".github", "CODEOWNERS")
     rules: List[tuple[str, List[str]]] = []
     
@@ -45,15 +63,23 @@ def _load_codeowners_rules() -> List[tuple[str, List[str]]]:
                     owners = parts[1:]
                     rules.append((pattern, owners))
     
+    domain_fallbacks = [
+        ("services/payment*", ["@payments-team", "@checkout-lead"]),
+        ("services/settlement*", ["@payments-team", "@settlement-lead"]),
+        ("services/auth*", ["@security-team", "@identity-lead"]),
+        ("services/database*", ["@infra-team", "@db-admin"]),
+        ("app/services/payment*", ["@payments-team", "@checkout-lead"]),
+        ("app/services/settlement*", ["@payments-team", "@settlement-lead"]),
+        ("app/services/auth*", ["@security-team", "@identity-lead"]),
+        ("services/*", ["@payments-team"]),
+        ("*", ["@payments-team"])
+    ]
     if not rules:
-        rules = [
-            ("services/payment*", ["@payments-team", "@checkout-lead"]),
-            ("services/auth*", ["@security-team", "@identity-lead"]),
-            ("services/database*", ["@infra-team", "@db-admin"]),
-            ("app/services/payment*", ["@payments-team", "@checkout-lead"]),
-            ("app/services/auth*", ["@security-team", "@identity-lead"]),
-            ("*", ["@core-triage-team"])
-        ]
+        rules = domain_fallbacks
+    else:
+        for pattern, owners in domain_fallbacks:
+            if not any(r[0] == pattern for r in rules):
+                rules.insert(0, (pattern, owners))
     return rules
 
 def _get_git_blame_authors(file_path: str) -> List[str]:
@@ -133,7 +159,7 @@ def resolve_codeowners_and_blame(
                     break
 
         if not matched_owners:
-            matched_owners = ["@core-triage-team"]
+            matched_owners = ["@payments-team"]
 
         primary_owner = matched_owners[0]
 

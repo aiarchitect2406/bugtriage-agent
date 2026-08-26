@@ -16,6 +16,8 @@ import asyncio
 import json
 import logging
 import os
+import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -28,8 +30,8 @@ import httpx
 import pytest
 import requests
 from a2a.client import ClientConfig, ClientFactory
-create_client = ClientFactory.connect
 from a2a.types import (
+
     Message,
     Part,
     Role,
@@ -42,10 +44,19 @@ from requests.exceptions import RequestException
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_URL = "http://127.0.0.1:8000"
-RUN_SSE_URL = BASE_URL + "/run_sse"
-A2A_RPC_URL = BASE_URL + "/a2a/app/"
-AGENT_CARD_URL = A2A_RPC_URL + ".well-known/agent-card.json"
+
+def get_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+PORT = get_free_port()
+BASE_URL = f"http://127.0.0.1:{PORT}"
+RUN_SSE_URL = f"{BASE_URL}/run_sse"
+A2A_RPC_URL = f"{BASE_URL}/a2a/app"
+AGENT_CARD_URL = f"{A2A_RPC_URL}/.well-known/agent-card.json"
+
 
 HEADERS = {"Content-Type": "application/json"}
 
@@ -58,28 +69,39 @@ def log_output(pipe: Any, log_func: Any) -> None:
 
 def start_server() -> subprocess.Popen[str]:
     """Start the FastAPI server using subprocess and log its output."""
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
     command = [
         sys.executable,
         "-m",
         "uvicorn",
         "app.fast_api_app:app",
         "--host",
-        "0.0.0.0",
+        "127.0.0.1",
         "--port",
-        "8000",
+        str(PORT),
     ]
+
+
+
     env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
     env["INTEGRATION_TEST"] = "TRUE"
     # Advertise a loopback URL so the A2A client can reach the card's transport.
     env["APP_URL"] = BASE_URL
+    env["PYTHONPATH"] = f"{project_root}:{env.get('PYTHONPATH', '')}"
+
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        cwd=project_root,
         env=env,
     )
+
+
 
     # Start threads to log stdout and stderr in real-time
     threading.Thread(
@@ -180,12 +202,14 @@ def test_a2a_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
             streaming=True,
             httpx_client=httpx.AsyncClient(timeout=60.0),
         )
-        client = await create_client(A2A_RPC_URL.rstrip("/"), config)
+        factory = ClientFactory(config)
+        client = await factory.create_from_url(A2A_RPC_URL.rstrip("/"))
         message = Message(
             message_id=f"msg-user-{uuid.uuid4()}",
             role=Role.ROLE_USER,
             parts=[Part(text="Hi!")],
         )
+
         return [
             chunk
             async for chunk in client.send_message(SendMessageRequest(message=message))

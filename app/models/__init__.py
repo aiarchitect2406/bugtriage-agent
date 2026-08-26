@@ -1,5 +1,3 @@
-"""Models package for ADK 2.0 Bug Triage Agent."""
-
 from app.models.bug_report import (
     StackFrame,
     BugReport,
@@ -14,11 +12,6 @@ from app.models.remediation import (
     FixPatchOutput,
     SandboxExecutionResult,
 )
-from app.models.hitl import (
-    HITLGateState,
-    WebhookSignalInput,
-    ApprovalResponse,
-)
 
 __all__ = [
     "StackFrame",
@@ -31,7 +24,5 @@ __all__ = [
     "FixPatchInput",
     "FixPatchOutput",
     "SandboxExecutionResult",
-    "HITLGateState",
-    "WebhookSignalInput",
-    "ApprovalResponse",
 ]
+

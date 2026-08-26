@@ -7,7 +7,6 @@ from app.skills.loader import (
     discover_available_skills,
     load_skill_instruction,
 )
-from app.agents.dynamic_subagent import DynamicSubagentFactory, get_subagent_factory
 
 
 def test_skill_catalog_discovery():
@@ -18,13 +17,14 @@ def test_skill_catalog_discovery():
 
     expected_skills = {
         "bug-triage-domain-mastery",
-        "hitl-pull-request",
+        "pull-request-publishing",
         "log-sanitization-dlp",
         "ownership-routing",
         "peer-code-review-claude",
         "sandbox-remediation",
         "vector-deduplication",
     }
+
     
     assert expected_skills.issubset(skill_names), f"Missing skills: {expected_skills - skill_names}"
 
@@ -67,12 +67,15 @@ def test_adk_tools_progressive_disclosure():
     assert "Claude Sonnet" in instruction
 
 
-def test_dynamic_subagent_factory():
-    """Verify DynamicSubagentFactory instantiates an isolated ADK Agent bound to a skill."""
-    factory = get_subagent_factory()
-    agent = factory.create_subagent_for_skill("sandbox-remediation")
+from app.skills.registry_client import GeapSkillRegistryClient
 
-    assert agent.name == "subagent_sandbox_remediation"
-    assert len(agent.tools) >= 1
-    assert "execute_reproduction_and_sandbox_fix" in str(agent.tools[0])
-    assert "DOMAIN GUIDELINES & SPECIFICATION" in agent.instruction
+
+def test_geap_skill_registry_validation():
+    """Verify GeapSkillRegistryClient validates skill package metadata adhering to GEAP standards."""
+    client = GeapSkillRegistryClient(project_id="test-project", location="us-central1")
+    catalog = get_skill_catalog()
+    context = catalog.load_skill_context("sandbox-remediation")
+    
+    assert context["name"] == "sandbox-remediation"
+    assert len(context["name"]) <= 63
+    assert len(context["description"]) <= 1024
