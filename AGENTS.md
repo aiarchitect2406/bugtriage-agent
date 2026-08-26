@@ -84,14 +84,15 @@ flowchart LR
 
 ## 2. Gemini Enterprise Agent Platform (GEAP) Native Features
 
-### 2.1 GEAP Skill Registry Architecture
-Do not confuse local IDE prompt skills with **Google Cloud GEAP Skill Registry**.
+### 2.1 GEAP Skill Registry & Skill Disambiguation
 
-* **IDE / Assistant Prompts (`.agents/skills/`)**: Local prompt instructions for AI coding assistants.
-* **GEAP Skill Registry (`skills/`)**: Cloud-managed service (`projects/{project}/locations/{location}/skills`) where agent skills are cataloged, versioned, registered, and retrieved at runtime.
+> [!IMPORTANT]
+> **Two different things are called "skills" — keep the terms straight:**
+> 1. **Vertical / Runtime Skills** (`skills/<skill>/` or `skills/<vertical>/<solution>/`): Domain recipes and runtime capabilities executed by the deployed Agent and registered in the **Google Cloud GEAP Skill Registry** (`projects/{project}/locations/{location}/skills`). **Shipped to users.**
+> 2. **Repo / Assistant Skills** (`.agents/skills/<skill>/`): AI coding-assistant helpers and meta-engineering instructions used by developer tooling (e.g. Antigravity, Gemini CLI) to build, evaluate, test, and deploy this repository. **Used to build this repo.**
 
 ```
-skills/
+skills/ (Vertical / Runtime Skills -> Published to GEAP Skill Registry)
 ├── pii-redaction/SKILL.md
 ├── codeowners-routing/SKILL.md
 ├── issue-deduplication/SKILL.md
@@ -99,6 +100,16 @@ skills/
 ├── fix-synthesis/SKILL.md
 ├── independent-code-review/SKILL.md
 └── pull-request-publishing/SKILL.md
+
+.agents/skills/ (Repo / Assistant Skills -> Coding Assistant Development Guide)
+├── adk-geap-best-practices/SKILL.md
+├── agent-architecture-design/SKILL.md
+├── agent-tools-best-practices/SKILL.md
+├── session-memory-state-management/SKILL.md
+├── zero-trust-governance/SKILL.md
+├── observability-tracing-security/SKILL.md
+├── spec-driven-development/SKILL.md
+└── eval-cicd-deployment/SKILL.md
 ```
 
 #### Synchronizing Local Skills to GEAP Skill Registry:

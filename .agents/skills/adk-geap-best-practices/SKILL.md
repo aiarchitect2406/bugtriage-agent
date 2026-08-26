@@ -148,14 +148,16 @@ This skill defines the technical standards, architectural patterns, and implemen
 
 ## 7. Native GEAP Skill Registry & Agent Gateway Integration
 
-### 7.1 GEAP Skill Registry
-- Maintain cloud-ready skill definitions in `skills/<skill-name>/SKILL.md`.
-- Register and synchronize all skills with Google Cloud GEAP Skill Registry via `scripts/sync_skills_to_geap.py` (`projects/{project}/locations/{location}/skills`).
-- At runtime, query dynamic skill prompts and schemas via `app.skills.registry_client.SkillRegistryClient`.
+### 7.1 Vertical Skills vs. Repo Skills
+- **Vertical / Runtime Skills (`skills/<skill-name>/SKILL.md`)**: Reusable domain capabilities executed by the deployed Agent and registered in Google Cloud GEAP Skill Registry (`projects/{project}/locations/{location}/skills`). Shipped to users.
+  - Synchronize via `scripts/sync_skills_to_geap.py`.
+  - Retrieve at runtime via `app.skills.registry_client.SkillRegistryClient`.
+- **Repo / Assistant Skills (`.agents/skills/<skill-name>/SKILL.md`)**: Meta-engineering instructions used by AI coding assistants to build, test, evaluate, and maintain this repository. Used to build this repo.
 
 ### 7.2 Agent Gateway Ingress
 - Define declarative ingress routing in `agent-gateway-ingress.yaml` (`access_type: CLIENT_TO_AGENT`, `protocol: A2A`).
 - Deploy with Gateway binding:
   `agents-cli deploy --deployment-target agent_runtime --service-name adk-bugtriage-gw --agent-identity --agent-gateway-ingress projects/{PROJECT}/locations/{REGION}/agentGateways/{GATEWAY} --region {REGION} --no-confirm-project`.
 - Verify Agent Card JSON via the reasoning engine's `.well-known/agent-card.json` endpoint.
+
 
