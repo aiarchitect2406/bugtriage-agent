@@ -64,10 +64,10 @@ def create_draft_pull_request(
         clean_id = issue_id.lower().replace("-", "_")
         branch = branch_name or f"fix/{clean_id}"
         target_repo_dir = Config.LOCAL_TARGET_REPO_PATH
-        github_token = os.getenv("GITHUB_TOKEN", "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")
+        github_token = os.getenv("GITHUB_TOKEN", "")
 
         # Auto-clone repository if not present (e.g. running inside Cloud Run container)
-        if not os.path.exists(os.path.join(target_repo_dir, ".git")):
+        if github_token and not os.path.exists(os.path.join(target_repo_dir, ".git")):
             try:
                 os.makedirs(target_repo_dir, exist_ok=True)
                 auth_clone_url = f"https://x-access-token:{github_token}@github.com/{repo}.git"
@@ -75,7 +75,8 @@ def create_draft_pull_request(
                     ["git", "clone", auth_clone_url, target_repo_dir],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
+                    env={"GIT_TERMINAL_PROMPT": "0", **os.environ}
                 )
             except Exception:
                 pass
@@ -134,11 +135,9 @@ def create_draft_pull_request(
             )
 
             # 6. Push branch to origin using authenticated remote if token available
-            github_token = os.getenv("GITHUB_TOKEN", "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")
-            try:
-                push_cmd = ["git", "push", "-u", "origin", branch, "--force"]
-                if github_token:
-                    # Configure authenticated push URL safely
+            if github_token:
+                try:
+                    push_cmd = ["git", "push", "-u", "origin", branch, "--force"]
                     auth_url = f"https://x-access-token:{github_token}@github.com/{repo}.git"
                     subprocess.run(
                         ["git", "remote", "set-url", "origin", auth_url],
@@ -147,20 +146,21 @@ def create_draft_pull_request(
                         text=True,
                         timeout=10
                     )
-                subprocess.run(
-                    push_cmd,
-                    cwd=target_repo_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=15
-                )
-            except Exception as e:
-                pass
+                    subprocess.run(
+                        push_cmd,
+                        cwd=target_repo_dir,
+                        capture_output=True,
+                        text=True,
+                        timeout=15,
+                        env={"GIT_TERMINAL_PROMPT": "0", **os.environ}
+                    )
+                except Exception as e:
+                    pass
 
         # 7. Call GitHub REST API to create real live Pull Request
         pr_number = 1
         pr_url = f"https://github.com/{repo}/pull/1"
-        github_token = os.getenv("GITHUB_TOKEN", "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")
+        github_token = os.getenv("GITHUB_TOKEN", "")
 
         if github_token:
             import urllib.request

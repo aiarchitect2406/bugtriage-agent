@@ -18,9 +18,16 @@ import base64
 import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+try:
+    import agentplatform
+    from agentplatform._genai.types.common import CreateSkillConfig, RetrieveSkillsConfig
+    HAS_AGENTPLATFORM = True
+except ImportError:
+    agentplatform = None
+    CreateSkillConfig = None
+    RetrieveSkillsConfig = None
+    HAS_AGENTPLATFORM = False
 
-import agentplatform
-from agentplatform._genai.types.common import CreateSkillConfig, RetrieveSkillsConfig
 from app.config import Config
 
 logger = logging.getLogger(__name__)
@@ -37,10 +44,13 @@ class GeapSkillRegistryClient:
         self.project_id = project_id or Config.PROJECT_ID
         loc = location or Config.LOCATION
         self.location = loc if loc and loc != "global" else "us-central1"
-        self._client = agentplatform.Client(
-            project=self.project_id,
-            location=self.location,
-        )
+        if HAS_AGENTPLATFORM and agentplatform is not None:
+            self._client = agentplatform.Client(
+                project=self.project_id,
+                location=self.location,
+            )
+        else:
+            self._client = None
 
     def list_skills(self) -> List[Dict[str, Any]]:
         """Lists all skills registered in the GEAP Skill Registry."""

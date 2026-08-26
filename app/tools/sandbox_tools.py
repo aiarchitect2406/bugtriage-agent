@@ -116,13 +116,18 @@ def execute_reproduction_and_sandbox_fix(
     # Read real existing source code if available in target repo
     real_code = existing_source_code
     target_repo_dir = Config.LOCAL_TARGET_REPO_PATH
-    if not os.path.exists(os.path.join(target_repo_dir, ".git")):
+    github_token = os.getenv("GITHUB_TOKEN", "")
+    if github_token and not os.path.exists(os.path.join(target_repo_dir, ".git")):
         try:
             os.makedirs(target_repo_dir, exist_ok=True)
-            github_token = os.getenv("GITHUB_TOKEN", "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")
             repo = Config.TARGET_REPO_NAME
             auth_clone_url = f"https://x-access-token:{github_token}@github.com/{repo}.git"
-            subprocess.run(["git", "clone", auth_clone_url, target_repo_dir], capture_output=True, timeout=30)
+            subprocess.run(
+                ["git", "clone", auth_clone_url, target_repo_dir],
+                capture_output=True,
+                timeout=30,
+                env={"GIT_TERMINAL_PROMPT": "0", **os.environ}
+            )
         except Exception:
             pass
 

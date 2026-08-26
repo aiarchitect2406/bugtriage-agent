@@ -15,11 +15,9 @@ import time
 import urllib.request
 import pytest
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "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").strip()
-if GITHUB_TOKEN.startswith("github_pat_"):
-    GITHUB_TOKEN = "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"
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
 
-TARGET_REPO = "aiarchitect2406/example-payment-svc"
+TARGET_REPO = os.getenv("TARGET_REPO", "aiarchitect2406/example-payment-svc")
 HEADERS = {
     "Authorization": f"token {GITHUB_TOKEN}",
     "Accept": "application/vnd.github.v3+json",
@@ -65,6 +63,10 @@ def get_pull_requests() -> list:
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not GITHUB_TOKEN or os.getenv("RUN_LIVE_GITHUB_TEST") != "true",
+    reason="Live GitHub E2E tests require valid GITHUB_TOKEN and RUN_LIVE_GITHUB_TEST=true",
+)
 def test_live_production_github_workflow_e2e():
     """Runs a live end-to-end test against the production GitHub repository."""
     title = f"[LIVE-E2E-{int(time.time())}] ZeroDivisionError in services/settlement_engine.py"

@@ -4,38 +4,37 @@
 [![Models](https://img.shields.io/badge/Gemini-3.7%20Flash%20%7C%203.1%20Pro%20%7C%20Claude%20Sonnet%204.6-8A2BE2?style=for-the-badge&logo=googleai)](https://ai.google.dev/)
 [![GEAP Skill Registry](https://img.shields.io/badge/GEAP%20Skill%20Registry-7%20Skills%20Synchronized-00E676?style=for-the-badge&logo=googlecloud)](https://cloud.google.com/gemini-enterprise-agent-platform/build/skill-registry)
 [![Agent Gateway](https://img.shields.io/badge/Agent%20Gateway-Connected%20(A2A)-38BDF8?style=for-the-badge&logo=googlecloud)](https://cloud.google.com/products/gemini-enterprise-agent-platform)
-[![Deployment](https://img.shields.io/badge/Agent%20Runtime-Reasoning%20Engine%20Active-00E676?style=for-the-badge&logo=googlecloud)](https://cloud.google.com/products/gemini-enterprise-agent-platform)
+[![Deployment](https://img.shields.io/badge/Agent%20Runtime-Reasoning%20Engine%20Ready-00E676?style=for-the-badge&logo=googlecloud)](https://cloud.google.com/products/gemini-enterprise-agent-platform)
 [![Eval Benchmark](https://img.shields.io/badge/Eval%20Score-100%25%20(3%2F3%20Golden)-brightgreen?style=for-the-badge)](tests/eval/run_eval.py)
 [![Test Suite](https://img.shields.io/badge/Pytest-25%2F25%20Passed-brightgreen?style=for-the-badge)](tests/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)](LICENSE)
 
 An autonomous software engineering bug triage and remediation agent built natively on **Google Agent Development Kit (ADK 2.0+)** and the **Gemini Enterprise Agent Platform (GEAP)**. 
 
-The agent transforms raw, noisy crash reports and GitHub issues into sanitized, deduplicated, single-hop routed, sandbox-verified pull requests. It features a multi-model **Maker-Checker Peer Review (Gemini 3.1 Pro Preview + Claude Sonnet 4.6)**, native **GEAP Skill Registry** discovery, and zero-trust **Agent Gateway Ingress Governance**.
+The agent transforms raw crash reports and GitHub issues into sanitized, deduplicated, single-hop routed, sandbox-verified pull requests. It features a multi-model **Maker-Checker Peer Review (Gemini 3.1 Pro Preview + Claude Sonnet 4.6)**, native **GEAP Skill Registry** discovery, and zero-trust **Agent Gateway Ingress Governance**.
 
 ---
 
-## 1. Assessment Rubric & Architectural Compliance (100 / 100)
+## 1. Core Architectural Capabilities
 
-| Category | Assessment Rubric Requirement | Architecture Implementation | Score |
-| :--- | :--- | :--- | :---: |
-| **1. Agent Orchestration** | ADK 2.0 Deterministic Multi-Agent Graph Workflow | 8-Node Graph Workflow (`app/workflow.py`) with ingestion, deduplication, enrichment, fix synthesis, dual-model review, sandbox, and PR publishing | **10/10** |
-| **2. Multi-Model Ensemble** | Tiered model routing based on latency, reasoning, and security verification | Fast Ingestion & Dedupe: `gemini-3.7-flash`<br>Deep Reasoning: `gemini-3.1-pro-preview`<br>Peer Review: `claude-sonnet-4-6` on Vertex AI (`global`) | **10/10** |
-| **3. Maker-Checker Review** | Independent cross-vendor peer verification for safety and CWE security | Maker synthesizes fix $\rightarrow$ Checker (`claude-sonnet-4-6`) audits CWE-476, CWE-89, type safety, scoring $\ge 90/100$ | **10/10** |
-| **4. Subprocess Sandbox** | Isolated ephemeral execution preventing host state mutations | Ephemeral sandbox running `pytest` reproduction test (confirms failure, applies diff, confirms 100% pass) | **10/10** |
-| **5. GEAP Skill Registry** | Cloud-native skill discovery, versioning, and cataloging | 7 Vertical Enterprise Skills published to Google Cloud Skill Registry and retrieved at runtime via `SkillRegistryClient` | **10/10** |
-| **6. End-to-End Automation** | Direct pull request creation & issue resolution upon peer review sign-off | Live automated branch push, PR creation, and issue resolution comment on [`example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc) in **34s** | **10/10** |
-| **7. OWASP DLP Sanitization** | OWASP LLM06 PII & secret defense before model/log consumption | Cloud DLP API + Dual regex fallback scrubbing bearer tokens, passwords, emails, and API keys | **10/10** |
-| **8. Observability & Tracing** | ADK 2.0 Lifecycle Plugins, OpenTelemetry, Cloud Trace | Structured Cloud Logging JSON format with 1:1 `logging.googleapis.com/trace` correlation and OpenTelemetry spans | **10/10** |
-| **9. Agent Gateway & Identity** | SPIFFE Agent Identity (WIF) & Agent Gateway Ingress | `agent-gateway-ingress.yaml`, `CLIENT_TO_AGENT` ingress, Model Armor, and Google Cloud Workload Identity Federation | **10/10** |
-| **10. Agent Runtime Ready** | Deployed to Vertex AI Agent Runtime Reasoning Engine | Reasoning Engine ID `3291433687480008704`, public `.well-known/agent-card.json` | **10/10** |
-| **Total** | **Comprehensive Autonomous Bug Triage & Auto-Remediation System** | **100% Green Pytest Suite (25/25) & 100% Golden Evaluation Score (3/3)** | **100/100** |
+| Pillar | Capability | Architecture Implementation |
+| :--- | :--- | :--- |
+| **Agent Orchestration** | ADK 2.0 Deterministic Multi-Agent Graph Workflow | 8-Node Graph Workflow (`app/workflow.py`) with ingestion, deduplication, enrichment, fix synthesis, dual-model review, sandbox, and PR publishing |
+| **Multi-Model Ensemble** | Tiered model routing based on latency, reasoning, and security verification | Fast Ingestion & Dedupe: `gemini-3.7-flash`<br>Deep Reasoning: `gemini-3.1-pro-preview`<br>Peer Review: `claude-sonnet-4-6` on Vertex AI (`global`) |
+| **Maker-Checker Review** | Independent cross-vendor peer verification for safety and CWE security | Maker synthesizes fix $\rightarrow$ Checker (`claude-sonnet-4-6`) audits CWE-476, CWE-89, type safety, scoring $\ge 90/100$ |
+| **Subprocess Sandbox** | Isolated ephemeral execution preventing host state mutations | Ephemeral sandbox running `pytest` reproduction test (confirms failure, applies diff, confirms 100% pass) |
+| **GEAP Skill Registry** | Cloud-native skill discovery, versioning, and cataloging | 7 Vertical Enterprise Skills published to Google Cloud Skill Registry and retrieved at runtime via `SkillRegistryClient` |
+| **End-to-End Automation** | Direct pull request creation & issue resolution upon peer review sign-off | Live automated branch push, PR creation, and issue resolution comment on target repositories |
+| **OWASP DLP Sanitization** | OWASP LLM06 PII & secret defense before model/log consumption | Cloud DLP API + Dual regex fallback scrubbing bearer tokens, passwords, emails, and API keys |
+| **Observability & Tracing** | ADK 2.0 Lifecycle Plugins, OpenTelemetry, Cloud Trace | Structured Cloud Logging JSON format with 1:1 `logging.googleapis.com/trace` correlation and OpenTelemetry spans |
+| **Agent Gateway & Identity** | SPIFFE Agent Identity (WIF) & Agent Gateway Ingress | `agent-gateway-ingress.yaml`, `CLIENT_TO_AGENT` ingress, Model Armor, and Google Cloud Workload Identity Federation |
+| **Agent Runtime Ready** | Managed Vertex AI Agent Runtime Deployment | Scalable deployment to Vertex AI Reasoning Engine with standardized `.well-known/agent-card.json` |
 
 ---
 
 ## 2. End-to-End Production Reference Architecture
 
-The diagram below illustrates the complete production flow from real GitHub Issue creation to Agent Gateway ingress, GEAP Skill Registry retrieval, multi-model verification, sandbox testing, and automated Pull Request delivery:
+The diagram below illustrates the complete production flow from GitHub Issue creation to Agent Gateway ingress, GEAP Skill Registry retrieval, multi-model verification, sandbox testing, and automated Pull Request delivery:
 
 ```mermaid
 flowchart TD
@@ -46,15 +45,15 @@ flowchart TD
     classDef darkCloud fill:#312e81,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
 
     subgraph External["1. External Microservice"]
-        User(["👤 User / Developer"]):::darkBox -->|"1. Opens Issue"| GHIssue["📦 GitHub Target Repo<br/><b>example-payment-svc</b> (Issue #63)"]:::darkBox
+        User(["👤 User / Developer"]):::darkBox -->|"1. Opens Issue"| GHIssue["📦 GitHub Target Repo<br/><b>Target Repository</b> (Issue #63)"]:::darkBox
         GHIssue -->|"2. Triggers Workflow"| GHActions["⚙️ GitHub Actions (WIF Authentication)"]:::darkBox
     end
 
     subgraph Gateway["2. GEAP Agent Gateway & Ingress Governance"]
-        GHActions -->|"3. Ingress Request"| AgentGW["🛡️ Agent Gateway Ingress<br/><b>bugtriage-agent-gateway</b><br/>(DLP + Model Armor + SPIFFE Identity)"]:::darkSec
+        GHActions -->|"3. Ingress Request"| AgentGW["🛡️ Agent Gateway Ingress<br/><b>Agent Gateway</b><br/>(DLP + Model Armor + SPIFFE Identity)"]:::darkSec
     end
 
-    subgraph Runtime["3. Vertex AI Agent Runtime (Reasoning Engine: 3291433687480008704)"]
+    subgraph Runtime["3. Vertex AI Agent Runtime (Reasoning Engine)"]
         AgentGW -->|"4. Invokes Workflow"| Node1["1. Ingestion & PII Scrubbing<br/>(Cloud DLP Regex Masking)"]:::darkStep
         Node1 --> Node2["2. Vector Deduplication<br/>(Cosine Similarity Clustering)"]:::darkStep
         Node2 --> Node3["3. Routing & SLA Assignment<br/>(CODEOWNERS & SLA Mapping)"]:::darkStep
@@ -66,13 +65,13 @@ flowchart TD
     end
 
     subgraph Registry["4. Google Cloud GEAP Skill Registry"]
-        SkillReg[("📚 GEAP Skill Registry<br/>projects/539424669613/locations/us-central1/skills<br/>• pii-redaction<br/>• codeowners-routing<br/>• issue-deduplication<br/>• root-cause-analysis<br/>• fix-synthesis<br/>• independent-code-review<br/>• pull-request-publishing")]:::darkCloud
+        SkillReg[("📚 GEAP Skill Registry<br/>projects/${PROJECT_ID}/locations/${REGION}/skills<br/>• pii-redaction<br/>• codeowners-routing<br/>• issue-deduplication<br/>• root-cause-analysis<br/>• fix-synthesis<br/>• independent-code-review<br/>• pull-request-publishing")]:::darkCloud
         Node4 <-->|"Dynamically Fetches Skills"| SkillReg
     end
 
     subgraph Output["5. Automated GitHub Delivery"]
-        Node8 -->|"9. Opens Pull Request"| GHPR["🔀 GitHub PR #64 Created<br/>(Includes Claude Sonnet 4.6 Review Proof)"]:::darkSuccess
-        Node8 -->|"10. Posts Comment"| GHComment["💬 Issue #63 Resolution Comment"]:::darkSuccess
+        Node8 -->|"9. Opens Pull Request"| GHPR["🔀 GitHub PR Created<br/>(Includes Claude Sonnet 4.6 Review Proof)"]:::darkSuccess
+        Node8 -->|"10. Posts Comment"| GHComment["💬 Issue Resolution Comment"]:::darkSuccess
     end
 ```
 
@@ -113,15 +112,15 @@ skills/ (Vertical / Runtime Skills -> Published to GEAP Skill Registry)
 ## 4. Google Cloud GEAP & Agent Runtime Production Configuration
 
 ### 4.1 Vertex AI Agent Runtime Deployment
-The agent is deployed as a managed Reasoning Engine on Google Cloud Vertex AI:
-* **Project ID**: `nithin-usbaws-aiml-solns-demos` (Project Number `539424669613`)
-* **Region**: `us-central1`
-* **Reasoning Engine Resource**: `projects/539424669613/locations/us-central1/reasoningEngines/3291433687480008704`
-* **Public Agent Card**: [`https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/projects/539424669613/locations/us-central1/reasoningEngines/3291433687480008704/api/a2a/app/.well-known/agent-card.json`](https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/projects/539424669613/locations/us-central1/reasoningEngines/3291433687480008704/api/a2a/app/.well-known/agent-card.json)
+The agent deploys as a managed Reasoning Engine on Google Cloud Vertex AI:
+* **Project ID**: `${PROJECT_ID}`
+* **Region**: `${REGION}`
+* **Reasoning Engine Resource**: `projects/${PROJECT_ID}/locations/${REGION}/reasoningEngines/${REASONING_ENGINE_ID}`
+* **Public Agent Card**: `https://${REGION}-aiplatform.googleapis.com/reasoningEngines/v1/projects/${PROJECT_ID}/locations/${REGION}/reasoningEngines/${REASONING_ENGINE_ID}/api/a2a/app/.well-known/agent-card.json`
 
 ### 4.2 Agent Gateway Ingress Configuration (`agent-gateway-ingress.yaml`)
 ```yaml
-gateway: projects/539424669613/locations/us-central1/agentGateways/bugtriage-agent-gateway
+gateway: projects/${PROJECT_ID}/locations/${REGION}/agentGateways/${GATEWAY_NAME}
 access_type: CLIENT_TO_AGENT
 protocol: A2A
 governance:
@@ -136,8 +135,8 @@ agents-cli deploy \
   --deployment-target agent_runtime \
   --service-name adk-bugtriage-gw \
   --agent-identity \
-  --agent-gateway-ingress projects/539424669613/locations/us-central1/agentGateways/bugtriage-agent-gateway \
-  --region us-central1 \
+  --agent-gateway-ingress projects/${PROJECT_NUMBER}/locations/${REGION}/agentGateways/${GATEWAY_NAME} \
+  --region ${REGION} \
   --no-confirm-project
 ```
 
@@ -185,7 +184,7 @@ uv run python tests/eval/run_eval.py
   [CHECK 1/4] PII Redaction PASSED (Redacted 2 tokens)
   [CHECK 2/4] CODEOWNERS Routing & SLA Assignment PASSED (@payments-team, P0)
   [CHECK 3/4] Sandbox Test Execution Status: PASSED
-  [CHECK 4/4] Automated PR Creation PASSED (PR: https://github.com/aiarchitect2406/example-payment-svc/pull/56)
+  [CHECK 4/4] Automated PR Creation PASSED
 
 [EVAL CASE] ID: eval_case_002_duplicate_checkout_npe
   [CHECK 1/4] PII Redaction PASSED (Redacted 0 tokens)
@@ -195,7 +194,7 @@ uv run python tests/eval/run_eval.py
   [CHECK 1/4] PII Redaction PASSED (Redacted 0 tokens)
   [CHECK 2/4] CODEOWNERS Routing & SLA Assignment PASSED (@security-team, P1)
   [CHECK 3/4] Sandbox Test Execution Status: PASSED
-  [CHECK 4/4] Automated PR Creation PASSED (PR: https://github.com/aiarchitect2406/example-payment-svc/pull/59)
+  [CHECK 4/4] Automated PR Creation PASSED
 
 ================================================================================
  [ADK EVAL SUMMARY] 3/3 Golden Test Trajectories PASSED (100% Accuracy)
@@ -206,13 +205,13 @@ uv run python tests/eval/run_eval.py
 ```bash
 uv run python tests/integration/test_live_github_e2e.py
 ```
-This test opens a live GitHub Issue on [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc), verifies GitHub Actions execution authenticated with Workload Identity Federation (WIF), and confirms that a verified Pull Request and issue resolution comment are posted within **34 seconds**.
+This test opens a live GitHub Issue on the target repository, verifies GitHub Actions execution authenticated with Workload Identity Federation (WIF), and confirms that a verified Pull Request and issue resolution comment are posted within **34 seconds**.
 
 ---
 
-## 6. Monitored Microservice (`example-payment-svc`)
+## 6. Target Monitored Microservice
 
-The agent monitors and patches the decoupled enterprise repository [`aiarchitect2406/example-payment-svc`](https://github.com/aiarchitect2406/example-payment-svc):
+The agent monitors and patches target enterprise repositories:
 * [`services/payment_gateway.py`](https://github.com/aiarchitect2406/example-payment-svc/blob/main/services/payment_gateway.py) $\rightarrow$ Owned by `@payments-team`
 * [`services/auth_service.py`](https://github.com/aiarchitect2406/example-payment-svc/blob/main/services/auth_service.py) $\rightarrow$ Owned by `@security-team`
 * All patches and reproduction tests execute inside isolated ephemeral subprocess sandboxes without modifying host repository state.

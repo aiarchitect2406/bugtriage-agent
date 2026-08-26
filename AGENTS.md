@@ -113,17 +113,20 @@ skills/ (Vertical / Runtime Skills -> Published to GEAP Skill Registry)
 ```
 
 #### Synchronizing Local Skills to GEAP Skill Registry:
-Use the dedicated sync utility [`scripts/sync_skills_to_geap.py`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/scripts/sync_skills_to_geap.py):
+Use the dedicated sync utility [`scripts/sync_skills_to_geap.py`](scripts/sync_skills_to_geap.py):
 ```bash
 uv run python scripts/sync_skills_to_geap.py
 ```
 
 #### Native Skill Registry Python Client Pattern:
-Use [`app/skills/registry_client.py`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/app/skills/registry_client.py) to dynamically retrieve skill instructions and tool definitions:
+Use [`app/skills/registry_client.py`](app/skills/registry_client.py) to dynamically retrieve skill instructions and tool definitions:
 ```python
+import os
 from app.skills.registry_client import SkillRegistryClient
 
-client = SkillRegistryClient(project_id="nithin-usbaws-aiml-solns-demos", location="us-central1")
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "your-gcp-project-id")
+region = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+client = SkillRegistryClient(project_id=project_id, location=region)
 skills = client.list_skills()
 rca_skill = client.get_skill("root-cause-analysis")
 print(f"Loaded Skill: {rca_skill.display_name} (v{rca_skill.version})")
@@ -138,7 +141,7 @@ All ingress traffic and tool egress MUST be routed through Google Cloud Agent Ga
 #### Ingress Manifest (`agent-gateway-ingress.yaml`):
 ```yaml
 # Agent Gateway Ingress Configuration for GEAP
-gateway: projects/539424669613/locations/us-central1/agentGateways/bugtriage-agent-gateway
+gateway: projects/${PROJECT_ID}/locations/${REGION}/agentGateways/${GATEWAY_NAME}
 access_type: CLIENT_TO_AGENT
 protocol: A2A
 governance:
@@ -153,15 +156,15 @@ agents-cli deploy \
   --deployment-target agent_runtime \
   --service-name adk-bugtriage-gw \
   --agent-identity \
-  --agent-gateway-ingress projects/539424669613/locations/us-central1/agentGateways/bugtriage-agent-gateway \
-  --region us-central1 \
+  --agent-gateway-ingress projects/${PROJECT_NUMBER}/locations/${REGION}/agentGateways/${GATEWAY_NAME} \
+  --region ${REGION} \
   --no-confirm-project
 ```
 
 #### Public Agent Card Endpoint:
 Once deployed, the agent card is published and accessible via Agent Gateway:
 ```text
-https://us-central1-aiplatform.googleapis.com/reasoningEngines/v1/projects/539424669613/locations/us-central1/reasoningEngines/3291433687480008704/api/a2a/app/.well-known/agent-card.json
+https://${REGION}-aiplatform.googleapis.com/reasoningEngines/v1/projects/${PROJECT_ID}/locations/${REGION}/reasoningEngines/${REASONING_ENGINE_ID}/api/a2a/app/.well-known/agent-card.json
 ```
 
 ---
@@ -195,7 +198,7 @@ uv tool install google-agents-cli
 | `agents-cli publish gemini-enterprise` | Publish agent to Gemini Enterprise Agent Registry |
 
 ### 3.4 Repository Cleanliness & Script Organization
-- **`scripts/` Directory**: Keep strictly clean. Contains ONLY operational maintenance utilities (e.g. [`scripts/sync_skills_to_geap.py`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/scripts/sync_skills_to_geap.py)).
+- **`scripts/` Directory**: Keep strictly clean. Contains ONLY operational maintenance utilities (e.g. [`scripts/sync_skills_to_geap.py`](scripts/sync_skills_to_geap.py)).
 - **`tests/integration/` Directory**: All end-to-end automated tests, live GitHub tests, and server integration tests belong in `tests/integration/`. Never keep one-off test scripts in `scripts/`.
 
 ### 3.5 Critical Coding Agent Rules
@@ -211,15 +214,15 @@ uv tool install google-agents-cli
 
 ## 4. Deep Domain Skills Index
 
-For detailed implementation recipes and code patterns, refer to the specialized skills in [`.agents/skills/`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills):
+For detailed implementation recipes and code patterns, refer to the specialized skills in [`.agents/skills/`](.agents/skills/):
 
 | Domain / Capability | Skill Reference |
 |:---|:---|
-| **ADK & GEAP Best Practices** | [`adk-geap-best-practices`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/adk-geap-best-practices/SKILL.md) |
-| **Agent Architecture & Multi-Agent DAGs** | [`agent-architecture-design`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/agent-architecture-design/SKILL.md) |
-| **Tool Design & Context Injection** | [`agent-tools-best-practices`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/agent-tools-best-practices/SKILL.md) |
-| **Sessions, Memory Bank & Compaction** | [`session-memory-state-management`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/session-memory-state-management/SKILL.md) |
-| **Zero-Trust, Agent Sandboxes & HITL** | [`zero-trust-governance`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/zero-trust-governance/SKILL.md) |
-| **Observability, Cloud Logging & DLP** | [`observability-tracing-security`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/observability-tracing-security/SKILL.md) |
-| **Spec-Driven & Evaluation Development** | [`spec-driven-development`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/spec-driven-development/SKILL.md) |
-| **CI/CD, Eval Flywheel & IaC** | [`eval-cicd-deployment`](file:///Users/nrcheruku/sourcecode/personal/bugtriage-agent/.agents/skills/eval-cicd-deployment/SKILL.md) |
+| **ADK & GEAP Best Practices** | [`adk-geap-best-practices`](.agents/skills/adk-geap-best-practices/SKILL.md) |
+| **Agent Architecture & Multi-Agent DAGs** | [`agent-architecture-design`](.agents/skills/agent-architecture-design/SKILL.md) |
+| **Tool Design & Context Injection** | [`agent-tools-best-practices`](.agents/skills/agent-tools-best-practices/SKILL.md) |
+| **Sessions, Memory Bank & Compaction** | [`session-memory-state-management`](.agents/skills/session-memory-state-management/SKILL.md) |
+| **Zero-Trust, Agent Sandboxes & HITL** | [`zero-trust-governance`](.agents/skills/zero-trust-governance/SKILL.md) |
+| **Observability, Cloud Logging & DLP** | [`observability-tracing-security`](.agents/skills/observability-tracing-security/SKILL.md) |
+| **Spec-Driven & Evaluation Development** | [`spec-driven-development`](.agents/skills/spec-driven-development/SKILL.md) |
+| **CI/CD, Eval Flywheel & IaC** | [`eval-cicd-deployment`](.agents/skills/eval-cicd-deployment/SKILL.md) |

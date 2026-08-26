@@ -78,10 +78,9 @@ logs/
 task-*.log
 .adk/
 .gemini/
+.google-agents-cli/
+policy.yaml
 
 # Sub-Repository Runtime Caches & Dynamic Reproduction Tests
-target_repo/.git/
-target_repo/.pytest_cache/
-target_repo/**/__pycache__/
-target_repo/tests/test_*_repro.py
+target_repo/
 tmpdocs/

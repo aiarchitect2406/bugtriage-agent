@@ -15,7 +15,7 @@ provider "google" {
 
 variable "project_id" {
   type        = string
-  default     = "nithin-usbaws-aiml-solns-demos"
+  default     = "your-gcp-project-id"
   description = "Google Cloud Project ID"
 }
 

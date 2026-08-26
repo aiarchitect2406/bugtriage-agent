@@ -71,40 +71,41 @@ File Modified: {target_file_path}
         user_prompt += f"\n--- SOURCE CONTEXT ---\n{source_context}\n"
 
     # 1. Attempt Live Vertex AI Anthropic Call (First-class Google Cloud integration)
-    try:
-        from anthropic import AnthropicVertex
-        vertex_client = AnthropicVertex(
-            region=Config.ANTHROPIC_LOCATION,
-            project_id=Config.PROJECT_ID,
-        )
-        target_model = model_name
-        response = vertex_client.messages.create(
-            model=target_model,
-            max_tokens=1500,
-            temperature=0.0,
-            system=CLAUDE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
-            timeout=5.0,
-        )
-        raw_text = response.content[0].text.strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.strip("`")
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:].strip()
-                
-        parsed_json = json.loads(raw_text)
-        result = CodeReviewResult(
-            verdict=parsed_json.get("verdict", "APPROVED"),
-            score=int(parsed_json.get("score", 95)),
-            security_verdict=parsed_json.get("security_verdict", "PASS"),
-            feedback_comments=parsed_json.get("feedback_comments", ["Patch verified clean by Claude Sonnet peer reviewer via Vertex AI."]),
-            cwe_checks=parsed_json.get("cwe_checks", ["CWE-476: PASS", "CWE-20: PASS"]),
-            reviewer_model=f"{target_model} (Vertex AI global)",
-            summary=parsed_json.get("summary", "LGTM: Patch addresses root cause cleanly."),
-        )
-        return result.model_dump()
-    except Exception as vertex_err:
-        logger.debug(f"Vertex AI Anthropic call not available: {vertex_err}. Checking direct API key.")
+    if Config.PROJECT_ID and Config.PROJECT_ID not in ["your-gcp-project-id", ""]:
+        try:
+            from anthropic import AnthropicVertex
+            vertex_client = AnthropicVertex(
+                region=Config.ANTHROPIC_LOCATION,
+                project_id=Config.PROJECT_ID,
+            )
+            target_model = model_name
+            response = vertex_client.messages.create(
+                model=target_model,
+                max_tokens=1500,
+                temperature=0.0,
+                system=CLAUDE_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+                timeout=5.0,
+            )
+            raw_text = response.content[0].text.strip()
+            if raw_text.startswith("```"):
+                raw_text = raw_text.strip("`")
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:].strip()
+                    
+            parsed_json = json.loads(raw_text)
+            result = CodeReviewResult(
+                verdict=parsed_json.get("verdict", "APPROVED"),
+                score=int(parsed_json.get("score", 95)),
+                security_verdict=parsed_json.get("security_verdict", "PASS"),
+                feedback_comments=parsed_json.get("feedback_comments", ["Patch verified clean by Claude Sonnet peer reviewer via Vertex AI."]),
+                cwe_checks=parsed_json.get("cwe_checks", ["CWE-476: PASS", "CWE-20: PASS"]),
+                reviewer_model=f"{target_model} (Vertex AI global)",
+                summary=parsed_json.get("summary", "LGTM: Patch addresses root cause cleanly."),
+            )
+            return result.model_dump()
+        except Exception as vertex_err:
+            logger.debug(f"Vertex AI Anthropic call not available: {vertex_err}. Checking direct API key.")
 
     # 2. Attempt Direct Anthropic API Call if key is available
     if api_key and not api_key.startswith("mock-"):
@@ -119,6 +120,7 @@ File Modified: {target_file_path}
                 temperature=0.0,
                 system=CLAUDE_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}],
+                timeout=5.0,
             )
             
             raw_text = response.content[0].text.strip()

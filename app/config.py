@@ -20,10 +20,10 @@ class Config:
     TARGET_REPO_URL: str = os.getenv("TARGET_REPO_URL", "https://github.com/aiarchitect2406/example-payment-svc.git")
     TARGET_REPO_NAME: str = os.getenv("TARGET_REPO_NAME", "aiarchitect2406/example-payment-svc")
     GITHUB_REPO: str = os.getenv("GITHUB_REPO", "aiarchitect2406/example-payment-svc")
-    LOCAL_TARGET_REPO_PATH: str = os.getenv("LOCAL_TARGET_REPO_PATH", "/Users/nrcheruku/sourcecode/personal/example-payment-svc")
+    LOCAL_TARGET_REPO_PATH: str = os.getenv("LOCAL_TARGET_REPO_PATH", "./target_repo")
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
-    PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "nithin-usbaws-aiml-solns-demos"))
-    LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+    PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "your-gcp-project-id"))
+    LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
     
     # Model Routing Constants (Vertex AI & Multi-Model Ensemble)
     FAST_MODEL: str = os.getenv("FAST_MODEL", "gemini-3.7-flash")
@@ -48,7 +48,7 @@ class Config:
         if env_val:
             return env_val
 
-        if HAS_SECRET_MANAGER:
+        if HAS_SECRET_MANAGER and cls.PROJECT_ID not in ["your-gcp-project-id", ""]:
             try:
                 client = secretmanager.SecretManagerServiceClient()
                 name = f"projects/{cls.PROJECT_ID}/secrets/{secret_id}/versions/latest"
