@@ -143,3 +143,19 @@ This skill defines the technical standards, architectural patterns, and implemen
   1. **Trip the Circuit Breaker**: Instantly revoke the compromised agent's tool credentials.
   2. **Stateful Quarantine**: Pause container execution, freeze short-term memory intact for forensic debugging, and route session trace to review queue.
   3. **Rollback**: Automatically trigger a git rollback to the last known safe version control checkpoint.
+
+---
+
+## 7. Native GEAP Skill Registry & Agent Gateway Integration
+
+### 7.1 GEAP Skill Registry
+- Maintain cloud-ready skill definitions in `skills/<skill-name>/SKILL.md`.
+- Register and synchronize all skills with Google Cloud GEAP Skill Registry via `scripts/sync_skills_to_geap.py` (`projects/{project}/locations/{location}/skills`).
+- At runtime, query dynamic skill prompts and schemas via `app.skills.registry_client.SkillRegistryClient`.
+
+### 7.2 Agent Gateway Ingress
+- Define declarative ingress routing in `agent-gateway-ingress.yaml` (`access_type: CLIENT_TO_AGENT`, `protocol: A2A`).
+- Deploy with Gateway binding:
+  `agents-cli deploy --deployment-target agent_runtime --service-name adk-bugtriage-gw --agent-identity --agent-gateway-ingress projects/{PROJECT}/locations/{REGION}/agentGateways/{GATEWAY} --region {REGION} --no-confirm-project`.
+- Verify Agent Card JSON via the reasoning engine's `.well-known/agent-card.json` endpoint.
+
