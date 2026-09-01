@@ -1,26 +1,11 @@
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-# 1. Vertex AI Agent Runtime Managed Identity Service Account
+# 1. GEAP Agent Identity Managed Service Account
 resource "google_service_account" "bug_triage_agent_sa" {
   project      = var.project_id
   account_id   = "bug-triage-agent-sa"
   display_name = "GEAP Managed Bug Triage Agent Service Account"
 }
 
-# 2. Least-Privilege IAM Role Bindings for Agent Service Account
+# 2. Least-Privilege IAM Role Bindings
 resource "google_project_iam_member" "agent_aiplatform_user" {
   project = var.project_id
   role    = "roles/aiplatform.user"
@@ -86,7 +71,7 @@ resource "google_service_account_iam_member" "github_actions_wif_binding" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions_pool.name}/attribute.repository/${var.github_repository}"
 }
 
-# 6. Secret Manager Secrets for Runtime Credential Injection
+# 6. Secret Manager Secrets for Runtime Injection
 resource "google_secret_manager_secret" "github_token" {
   project   = var.project_id
   secret_id = "github-api-token"
@@ -110,19 +95,6 @@ resource "google_storage_bucket" "agent_artifacts" {
   location                    = var.region
   uniform_bucket_level_access = true
   force_destroy               = false
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      age = 90
-    }
-  }
 }
 
 resource "google_storage_bucket_iam_member" "agent_storage_admin" {
@@ -131,7 +103,7 @@ resource "google_storage_bucket_iam_member" "agent_storage_admin" {
   member = "serviceAccount:${google_service_account.bug_triage_agent_sa.email}"
 }
 
-# 8. Cloud Run v2 Service for ADK 2.0 Agent Deployment
+# 8. Cloud Run Service for ADK 2.0 Agent Deployment
 resource "google_cloud_run_v2_service" "bug_triage_agent" {
   project  = var.project_id
   name     = "${var.project_name}-service"

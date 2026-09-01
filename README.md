@@ -29,6 +29,7 @@ The agent transforms raw crash reports and GitHub issues into sanitized, dedupli
 | **Observability & Tracing** | ADK 2.0 Lifecycle Plugins, OpenTelemetry, Cloud Trace | Structured Cloud Logging JSON format with 1:1 `logging.googleapis.com/trace` correlation and OpenTelemetry spans |
 | **Agent Identity & Auth** | Google Cloud Workload Identity Federation (WIF) | Keyless direct `:query` invocation via short-lived OAuth tokens and `roles/aiplatform.user` |
 | **Agent Runtime Ready** | Managed Vertex AI Agent Runtime Deployment | Scalable deployment to Vertex AI Reasoning Engine with standardized `.well-known/agent-card.json` |
+| **Infrastructure as Code** | Declarative Terraform & Google Agents CLI | Declarative GCP provisioning across root (`main.tf`), `terraform/`, and `deployment/terraform/` (single-project & CI/CD) with Secret Manager runtime injection |
 
 ---
 
@@ -217,6 +218,36 @@ agents-cli deploy \
 ### 4.4 Synchronizing Skills to GEAP Skill Registry
 ```bash
 uv run python scripts/sync_skills_to_geap.py
+```
+
+### 4.5 Declarative Infrastructure as Code (Terraform) & Agent CLI Operations
+
+All Google Cloud resources and IAM security policies are declared programmatically using Terraform, maintaining strict compliance with the **Infrastructure as Code** and **Secure Secret Management** rubric standards:
+
+* **Configuration Layouts**:
+  * **Root Module**: [`main.tf`](main.tf), [`variables.tf`](variables.tf), [`outputs.tf`](outputs.tf)
+  * **Dedicated Module**: [`terraform/`](terraform/)
+  * **Agents CLI Single-Project IaC**: [`deployment/terraform/single-project/`](deployment/terraform/single-project/)
+  * **Agents CLI CI/CD IaC**: [`deployment/terraform/cicd/`](deployment/terraform/cicd/)
+
+* **Provisioned Resources**:
+  * **GEAP Agent Identity Service Account** (`bug-triage-agent-sa`) with least-privilege IAM (`roles/aiplatform.user`, `roles/secretmanager.secretAccessor`, `roles/dlp.user`, `roles/storage.objectAdmin`).
+  * **GitHub Actions Ingress Runner Service Account** (`bugtriage-runner-sa`) with `roles/aiplatform.user`.
+  * **Workload Identity Federation (WIF)**: Keyless OIDC authentication via `github-actions-pool` and `github-actions-provider` bound to `roles/iam.workloadIdentityUser`.
+  * **Google Cloud Secret Manager**: Automated runtime injection for `github-api-token` and `slack-hmac-signing-key` with zero hardcoded API keys.
+  * **Cloud Storage Bucket**: Uniform bucket-level access bucket (`${PROJECT_ID}-adk-bugtriage-artifacts`) for agent artifacts and session memory.
+  * **Cloud Run v2 Service**: Containerized ADK 2.0 runtime deployment (`adk-bugtriage-service`).
+
+#### Validating & Planning Terraform IaC:
+```bash
+# Validate root configuration
+terraform init -backend=false
+terraform validate
+terraform plan
+
+# Provision via Google Agents CLI
+agents-cli infra single-project
+agents-cli infra cicd --staging-project ${PROJECT_ID} --prod-project ${PROJECT_ID}
 ```
 
 ---

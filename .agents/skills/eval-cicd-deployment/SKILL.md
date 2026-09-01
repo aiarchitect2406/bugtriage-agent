@@ -21,13 +21,19 @@ This skill provides testing, CI/CD, infrastructure, and agent protocol patterns 
 ---
 
 ## 2. Infrastructure as Code & Agent CLI Documentation
-- Manage Google Cloud infrastructure declaratively using Terraform (`main.tf` with `google` provider >= 5.0).
+- Manage Google Cloud infrastructure declaratively using Terraform (`main.tf`, `terraform/`, `deployment/terraform/single-project`, and `deployment/terraform/cicd` with `google` provider >= 5.0).
 - Provision mandatory resources with full IAM bindings:
-  - Managed Service Account (`google_service_account`) for GEAP Agent Identity with `roles/aiplatform.user`, `roles/secretmanager.secretAccessor`, and `roles/dlp.user`.
-  - Google Cloud Secret Manager secrets (`google_secret_manager_secret`).
+  - Managed Service Account (`google_service_account`) for GEAP Agent Identity with `roles/aiplatform.user`, `roles/secretmanager.secretAccessor`, `roles/dlp.user`, and `roles/storage.objectAdmin`.
+  - GitHub Actions Ingress Runner Service Account (`google_service_account.bugtriage_runner_sa`) with Workload Identity Federation (`roles/iam.workloadIdentityUser`).
+  - Google Cloud Secret Manager secrets (`google_secret_manager_secret` for `github-api-token` and `slack-hmac-signing-key`).
+  - Cloud Storage Bucket (`google_storage_bucket`) for agent artifacts, sessions, and long-term memory backups.
   - Google Cloud Run v2 service (`google_cloud_run_v2_service`) deploying the containerized ADK runtime.
-- **Agent CLI Operations**: Ensure and document full operational compatibility with Google ADK CLI and Agent API CLI:
+- **Agent CLI Operations**: Ensure and document full operational compatibility with Google ADK CLI, Agent API CLI, and Agents CLI infra commands:
   ```bash
+  # Provision single-project or CI/CD infrastructure
+  agents-cli infra single-project
+  agents-cli infra cicd --staging-project $PROJECT_ID --prod-project $PROJECT_ID
+
   # Start a new conversation
   agentapi new-conversation --model=flash --title="Incident #101" "Triage incoming alert"
 

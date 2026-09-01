@@ -166,6 +166,24 @@ https://${REGION}-aiplatform.googleapis.com/reasoningEngines/v1/projects/${PROJE
 
 ---
 
+### 2.3 Declarative Infrastructure as Code (Terraform)
+
+All Google Cloud infrastructure, Managed Identities, IAM role bindings, and Secret Manager containers are defined declaratively using Terraform:
+* **Root Module**: [`main.tf`](main.tf), [`variables.tf`](variables.tf), [`outputs.tf`](outputs.tf)
+* **Dedicated Module**: [`terraform/`](terraform/)
+* **Google Agents CLI Modules**:
+  * Single-Project Runtime: [`deployment/terraform/single-project/`](deployment/terraform/single-project/)
+  * Multi-Env CI/CD & WIF: [`deployment/terraform/cicd/`](deployment/terraform/cicd/)
+
+#### Key Declared Resources:
+* **GEAP Agent Identity**: `google_service_account.bug_triage_agent_sa` with `roles/aiplatform.user`, `roles/secretmanager.secretAccessor`, `roles/dlp.user`, `roles/storage.objectAdmin`.
+* **GitHub Actions Keyless WIF**: `google_iam_workload_identity_pool.github_actions_pool` & `google_iam_workload_identity_pool_provider.github_actions_provider`.
+* **Zero-Secret Storage**: `google_secret_manager_secret.github_token` and `google_secret_manager_secret.slack_hmac_key`.
+* **Artifact & Session Storage**: `google_storage_bucket.agent_artifacts` with uniform bucket-level access.
+* **Agent Service Runtime**: `google_cloud_run_v2_service.bug_triage_agent`.
+
+---
+
 ## 3. Operational Guidelines & Development Lifecycle
 
 ### 3.1 Prerequisites
@@ -193,6 +211,9 @@ uv tool install google-agents-cli
 | `agents-cli eval run` | Run agent over eval dataset and grade traces |
 | `agents-cli deploy` | Deploy agent to Google Cloud Agent Runtime |
 | `agents-cli publish gemini-enterprise` | Publish agent to Gemini Enterprise Agent Registry |
+| `agents-cli infra single-project` | Provision single-project Terraform infrastructure |
+| `agents-cli infra cicd` | Provision full CI/CD deployment pipeline |
+| `terraform init -backend=false && terraform validate` | Validate declarative Terraform IaC configurations |
 
 ### 3.4 Repository Cleanliness & Script Organization
 - **`scripts/` Directory**: Keep strictly clean. Contains ONLY operational maintenance utilities (e.g. [`scripts/sync_skills_to_geap.py`](scripts/sync_skills_to_geap.py)).
