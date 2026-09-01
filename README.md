@@ -38,11 +38,10 @@ Our reference architecture follows a **Visual Working-Backwards Pattern**: start
 
 ![Google Cloud Architecture Center Reference Architecture](docs/images/reference_architecture.png)
 
-<details>
-<summary>View Mermaid Component Diagram Source</summary>
+### Component Interaction Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
     classDef user fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px,color:#1a73e8;
     classDef security fill:#fef7e0,stroke:#e37400,stroke-width:2px,color:#b06000;
     classDef runtime fill:#e8f0fe,stroke:#1a73e8,stroke-width:2px,color:#1a73e8;
@@ -52,68 +51,64 @@ flowchart LR
     classDef delivery fill:#e6f4ea,stroke:#188038,stroke-width:2px,color:#137333;
     classDef models fill:#f3e8fd,stroke:#9333ea,stroke-width:2px,color:#581c87;
 
-    subgraph GitHubSource["GitHub Platform (Incident Ingress)"]
+    subgraph GitHubPlatform["1. GitHub Platform (Incident Ingress)"]
         Dev["👤 Software Engineer / SRE<br/>Opens incident report"]:::user
-        Repo["📦 Target Repository<br/>Issues, Stack Traces, CODEOWNERS<br/><b>SECURE CHECKOUT TARGET</b>"]:::user
+        Repo["📦 Target Repository<br/>Issues, Stack Traces, CODEOWNERS<br/>SECURE CHECKOUT TARGET"]:::user
         GHA["⚡ GitHub Actions<br/>triage-on-issue.yml (OIDC JWT)"]:::security
         Dev -->|"1. Reports Bug"| Repo
         Repo -->|"Webhook"| GHA
     end
 
-    subgraph GCPBoundary["Google Cloud Platform (Autonomous Agent Environment)"]
-        subgraph IngressTier["Zero-Trust Ingress"]
-            WIF["🔑 Cloud IAM WIF<br/>roles/aiplatform.user<br/>Keyless Auth"]:::security
-        end
+    subgraph IngressTier["2. Zero-Trust Ingress"]
+        WIF["🔑 Cloud IAM WIF<br/>roles/aiplatform.user<br/>Keyless Auth"]:::security
+    end
 
-        subgraph RuntimeBox["Vertex AI Agent Runtime (Control Plane & Orchestrator)"]
-            Coord["⚙️ Workflow Coordinator<br/>DeterministicTriageWorkflow<br/>Central Orchestrator"]:::runtime
-            Ingest["🛡️ 1. Ingest & Sanitize<br/>ingest_node • Cloud DLP<br/>OWASP LLM06"]:::security
-            Dedupe["🔍 2. Vector Dedupe<br/>dedupe_node • Cosine Sim<br/>gemini-3.7-flash"]:::runtime
-            Owners["👥 3. CODEOWNERS<br/>enrich_node • Routing<br/>P0 (2h) / P1 (24h)"]:::runtime
-            Coord --> Ingest --> Dedupe --> Owners
-        end
+    subgraph RuntimeBox["3. Vertex AI Agent Runtime (Control Plane & Orchestrator)"]
+        Coord["⚙️ Workflow Coordinator<br/>DeterministicTriageWorkflow<br/>Central Orchestrator"]:::runtime
+        Ingest["🛡️ 1. Ingest & Sanitize<br/>ingest_node • Cloud DLP<br/>OWASP LLM06"]:::security
+        Dedupe["🔍 2. Vector Dedupe<br/>dedupe_node • Cosine Sim<br/>gemini-3.7-flash"]:::runtime
+        Owners["👥 3. CODEOWNERS<br/>enrich_node • Routing<br/>P0 (2h) / P1 (24h)"]:::runtime
+        Coord --> Ingest --> Dedupe --> Owners
+    end
 
-        subgraph MemoryTier["GEAP State & Memory Tier"]
-            Mem["🧠 Vertex AI Agent Sessions & Memory Bank<br/>Turn State (32k Compaction) & Cross-Session Memory"]:::memory
-        end
+    subgraph MemoryTier["4. GEAP State & Memory Tier"]
+        Mem["🧠 Vertex AI Agent Sessions & Memory Bank<br/>Turn State (32k Compaction) & Cross-Session Memory"]:::memory
+    end
 
-        subgraph SandboxBox["Vertex AI Agent Sandbox (Code Execution Environment)"]
-            Maker["✨ Maker: Gemini 3.1 Pro<br/>Synthesizes repro.py + fix.diff"]:::runtime
-            Pytest["🧪 Pytest Code Exec<br/>1. Repro fails on base (RED)<br/>2. Repro passes with diff (GREEN)<br/><b>ZERO HOST MUTATION</b>"]:::sandbox
-            Checker["✳️ Checker: Claude Sonnet 4.6<br/>Security Audit (CWE-476/89)<br/><b>Consensus Score ≥ 90</b>"]:::security
-            Maker -->|"Diff"| Pytest
-            Pytest -->|"Pass"| Checker
-        end
+    subgraph SandboxBox["5. Vertex AI Agent Sandbox (Code Execution Environment)"]
+        Maker["✨ Maker: Gemini 3.1 Pro<br/>Synthesizes repro.py + fix.diff"]:::runtime
+        Pytest["🧪 Pytest Code Exec<br/>1. Repro fails on base (RED)<br/>2. Repro passes with diff (GREEN)<br/>ZERO HOST MUTATION"]:::sandbox
+        Checker["✳️ Checker: Claude Sonnet 4.6<br/>Security Audit (CWE-476/89)<br/>Consensus Score >= 90"]:::security
+        Maker -->|"Diff"| Pytest
+        Pytest -->|"Pass"| Checker
+    end
 
-        subgraph GatewayBox["Google Cloud Agent Gateway (Egress: AGENT_TO_ANYWHERE)"]
-            GW["🌐 Outbound Egress Proxy<br/>• Cryptographic SPIFFE Identity<br/>• Enforces mTLS Mutual Authentication<br/>• JIT Downscoped OAuth & REST Tokens<br/>• Real-Time Policy Inspection"]:::gateway
-        end
+    subgraph GatewayBox["6. Google Cloud Agent Gateway (Egress: AGENT_TO_ANYWHERE)"]
+        GW["🌐 Outbound Egress Proxy<br/>• Cryptographic SPIFFE Identity<br/>• Enforces mTLS Mutual Authentication<br/>• JIT Downscoped OAuth & REST Tokens<br/>• Real-Time Policy Inspection"]:::gateway
+    end
 
-        subgraph ModelGardenBox["Vertex AI Model Garden (Governed Inference Tier)"]
-            Flash["⚡ Gemini 3.7 Flash<br/>Routing & Deduplication"]:::models
-            Pro["✨ Gemini 3.1 Pro<br/>Forensics & Fix Synthesis"]:::models
-            Claude["✳️ Claude Sonnet 4.6<br/>Independent Security Audit"]:::models
-        end
+    subgraph ModelGardenBox["7. Vertex AI Model Garden (Governed Inference Tier)"]
+        Flash["⚡ Gemini 3.7 Flash<br/>Routing & Deduplication"]:::models
+        Pro["✨ Gemini 3.1 Pro<br/>Forensics & Fix Synthesis"]:::models
+        Claude["✳️ Claude Sonnet 4.6<br/>Independent Security Audit"]:::models
+    end
 
-        subgraph DeliveryBox["GitHub Delivery & Tools (External APIs)"]
-            Checkout["🔒 Secure Code Checkout (mTLS)<br/>Clones repo & CODEOWNERS"]:::security
-            PR["📋 Pull Request #42<br/>Patch + Repro + Scorecard (94/100)<br/><b>READY TO MERGE</b>"]:::delivery
-            Checkout --> PR
-        end
+    subgraph DeliveryBox["8. GitHub Delivery & Tools (External APIs)"]
+        Checkout["🔒 Secure Code Checkout (mTLS)<br/>Clones repo & CODEOWNERS"]:::security
+        PR["📋 Pull Request #42<br/>Patch + Repro + Scorecard (94/100)<br/>READY TO MERGE"]:::delivery
+        Checkout --> PR
     end
 
     GHA -->|"2. Keyless Ingress"| WIF
     WIF -->|"3. :query"| Coord
-    Coord <-.->|"Turn State & Memory"| Mem
+    Coord <-->|"Turn State & Memory"| Mem
     Coord -->|"4. Provisions Sandbox (sandboxes.create)"| Maker
-    Checker -->|"5. Returns Verified Patch & Score (≥90)"| Coord
+    Checker -->|"5. Returns Verified Patch & Score (>=90)"| Coord
     Coord -->|"6. Governed Tool Egress"| GW
     GW -->|"Model Egress (mTLS)"| ModelGardenBox
     GW -->|"7. GitHub Egress (mTLS)"| DeliveryBox
     PR -.->|"8. 1-Click Merge"| Dev
 ```
-
-</details>
 
 ---
 
