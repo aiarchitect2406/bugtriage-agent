@@ -1,0 +1,83 @@
+[
+  {
+    "issue_id": "BUG-2026-001",
+    "title": "NullPointerException in PaymentGateway on checkout",
+    "description": "User reported NullPointerException when submitting checkout with empty address field.",
+    "stack_trace": "2026-08-04 12:00:01 ERROR app.services.payment - java.lang.NullPointerException: Address object is null at File \"app/services/payment_checkout.py\", line 42, in process_checkout token=secret_bearer_token_12345 user_email=john.doe@example.com",
+    "metadata": {
+      "severity": "Blocker"
+    }
+  },
+  {
+    "issue_id": "BUG-2026-003",
+    "title": "Invalid auth token error on user login",
+    "description": "User receives 401 Unauthorized during social auth sign-in.",
+    "stack_trace": "2026-08-04 12:10:00 ERROR app.services.auth - ValueError: Invalid JWT token signature at File \"app/services/auth.py\", line 105, in verify_jwt_token",
+    "metadata": {
+      "severity": "Major"
+    }
+  },
+  {
+    "issue_id": "ISSUE-KEYERROR-01",
+    "title": "KeyError: 'currency' in process_payment",
+    "description": "Transactions without explicit currency field crash payment gateway during checkout. Customer email: user123@example.com, card_last4: 4242.",
+    "stack_trace": "Traceback (most recent call last):\n  File \"services/payment_gateway.py\", line 58, in process_payment\n    currency_rate = RATES[payload[\"currency\"]]\nKeyError: 'currency'",
+    "metadata": {
+      "severity": "Major"
+    }
+  },
+  {
+    "issue_id": "ISSUE-TYPEERR-04",
+    "title": "TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'",
+    "description": "When surcharge fee is None, total charge calculation fails with TypeError in settlement.",
+    "stack_trace": "Traceback (most recent call last):\n  File \"services/settlement_engine.py\", line 35, in compute_total_with_fee\n    return base_amount + surcharge_fee\nTypeError: unsupported operand type(s) for +: 'int' and 'NoneType'",
+    "metadata": {
+      "severity": "Major"
+    }
+  },
+  {
+    "issue_id": "ISSUE-ZERODIV-05",
+    "title": "ZeroDivisionError: division by zero in settlement_engine.py",
+    "description": "Batch reconciliation with 0 transactions triggers unhandled division by zero.",
+    "stack_trace": "Traceback (most recent call last):\n  File \"services/settlement_engine.py\", line 42, in calculate_settlement_split\n    fee_per_transaction = total_platform_fee / transaction_count\nZeroDivisionError: division by zero",
+    "metadata": {
+      "severity": "Blocker"
+    }
+  },
+  {
+    "issue_id": "BUG-MASTER-100",
+    "title": "Database connection timeout in checkout worker",
+    "description": "Checkout worker unable to reach postgres database pool after 30s.",
+    "stack_trace": "File \"app/services/db.py\", line 88, in connect_pool",
+    "metadata": {
+      "severity": "Critical"
+    }
+  },
+  {
+    "issue_id": "BUG-E2E-38256a",
+    "title": "NullPointerException in PaymentGateway on checkout BUG-E2E-38256a",
+    "description": "Checkout process crashes when customer attempts to pay with null address.",
+    "stack_trace": "File \"app/services/payment_checkout.py\", line 42, in process_checkout token=bearer_sec_9999 user_email=lead_dev@ecommerce.org",
+    "metadata": {
+      "severity": "Blocker"
+    }
+  },
+  {
+    "issue_id": "BUG-E2E-821542",
+    "title": "NullPointerException in PaymentGateway on checkout BUG-E2E-821542",
+    "description": "Checkout process crashes when customer attempts to pay with null address.",
+    "stack_trace": "File \"app/services/payment_checkout.py\", line 42, in process_checkout token=bearer_sec_9999 user_email=lead_dev@ecommerce.org",
+    "metadata": {
+      "severity": "Blocker"
+    }
+  },
+  {
+    "issue_id": "BUG-E2E-6e8b94",
+    "title": "NullPointerException in PaymentGateway on checkout BUG-E2E-6e8b94",
+    "description": "Checkout process crashes when customer attempts to pay with null address.",
+    "stack_trace": "File \"app/services/payment_checkout.py\", line 42, in process_checkout token=bearer_sec_9999 user_email=lead_dev@ecommerce.org",
+    "metadata": {
+      "severity": "Blocker"
+    }
+  }
+]

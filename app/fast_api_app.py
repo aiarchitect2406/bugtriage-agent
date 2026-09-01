@@ -4,7 +4,7 @@ import contextlib
 import os
 import logging
 from collections.abc import AsyncIterator
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
@@ -74,8 +74,37 @@ def healthz() -> Dict[str, Any]:
     }
 
 
+from pydantic import BaseModel, Field
+
+
+class TriageRequest(BaseModel):
+    issue_id: str = Field(..., description="Target issue ID, e.g. GH-101")
+    title: str = Field(..., description="Bug report title")
+    description: Optional[str] = Field("", description="Detailed bug report description")
+    raw_logs: Optional[str] = Field("", description="Stack trace or execution logs")
+    source_system: Optional[str] = Field("GitHub", description="Source alert system")
+
+
+@app.post("/triage")
+def triage_issue(req: TriageRequest) -> Dict[str, Any]:
+    """Autonomous Bug Triage Endpoint executing the full ADK pipeline."""
+    from app.models.bug_report import BugReport
+    from app.workflow import TriageCoordinator
+
+    coordinator = TriageCoordinator()
+    report = BugReport(
+        issue_id=req.issue_id,
+        title=req.title,
+        description=req.description or "",
+        raw_logs=req.raw_logs or req.description or "",
+        source_system=req.source_system or "GitHub",
+    )
+    return coordinator.execute_triage_pipeline(report)
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8085)
+    port = int(os.getenv("PORT", "8080"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 

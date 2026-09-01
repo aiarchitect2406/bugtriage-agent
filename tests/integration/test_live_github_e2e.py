@@ -13,8 +13,10 @@ import os
 import sys
 import time
 import urllib.request
+from dotenv import load_dotenv
 import pytest
 
+load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
 
 TARGET_REPO = os.getenv("TARGET_REPO", "aiarchitect2406/example-payment-svc")
@@ -62,6 +64,16 @@ def get_pull_requests() -> list:
         return []
 
 
+def get_pull_request_files(pr_number: int) -> list:
+    url = f"https://api.github.com/repos/{TARGET_REPO}/pulls/{pr_number}/files"
+    req = urllib.request.Request(url, headers=HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return []
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(
     not GITHUB_TOKEN or os.getenv("RUN_LIVE_GITHUB_TEST") != "true",
@@ -85,17 +97,17 @@ def test_live_production_github_workflow_e2e():
     )
 
     # 1. Create Issue on GitHub
-    print(f"\\n[1] Creating Live GitHub Issue on {TARGET_REPO}...")
+    print(f"\n[1] Creating Live GitHub Issue on {TARGET_REPO}...")
     issue = create_github_issue(title, body)
     issue_number = issue["number"]
     issue_url = issue["html_url"]
     print(f"  Created Issue #{issue_number}: {issue_url}")
 
     # 2. Poll for Workflow Completion (PR & Issue Comment)
-    print(f"\\n[2] Waiting for GitHub Action / GEAP Workflow to create PR and comment...")
+    print(f"\n[2] Waiting for GitHub Action / GEAP Workflow to create PR and comment...")
     matched_pr = None
     matched_comment = None
-    max_wait_seconds = 120
+    max_wait_seconds = 180
     start_time = time.time()
 
     while time.time() - start_time < max_wait_seconds:
@@ -123,8 +135,46 @@ def test_live_production_github_workflow_e2e():
 
     assert matched_pr is not None, f"Timed out waiting for automated PR for Issue #{issue_number}"
     print(f"  Automated PR Verified: {matched_pr['html_url']}")
-    if matched_comment:
-        print(f"  Resolution Comment Verified: {matched_comment['html_url']}")
+
+    # 3. Assert Issue Resolution Comment is posted back on GitHub Issue
+    assert matched_comment is not None, f"Timed out waiting for resolution comment on Issue #{issue_number}"
+    print(f"  Resolution Comment Verified: {matched_comment['html_url']}")
+
+    comment_body = matched_comment.get("body", "")
+    assert "GEAP Bug Triage Agent Resolved Issue" in comment_body or "Analysis" in comment_body, (
+        f"Comment on Issue #{issue_number} is missing resolution details! Body: {comment_body}"
+    )
+    assert (
+        matched_pr["html_url"] in comment_body
+        or f"#{matched_pr['number']}" in comment_body
+        or "pull" in comment_body.lower()
+    ), (
+        f"Comment on Issue #{issue_number} is missing link to PR #{matched_pr['number']}! Body: {comment_body}"
+    )
+    assert "gemini-3.1-pro-preview" in comment_body or "Gemini" in comment_body, (
+        f"Comment on Issue #{issue_number} is missing Maker model reference! Body: {comment_body}"
+    )
+    assert "claude" in comment_body.lower() or "audit" in comment_body.lower() or "score" in comment_body.lower(), (
+        f"Comment on Issue #{issue_number} is missing Checker review reference! Body: {comment_body}"
+    )
+    print(f"  Verified resolution details and PR link confirmed in issue comment!")
+
+    # 4. Deep Contract Assertions: Reproduction Test & Maker-Checker Scorecard
+    pr_body = matched_pr.get("body", "")
+    assert "Maker-Checker" in pr_body or "Claude Sonnet" in pr_body, (
+        f"PR #{matched_pr['number']} description is missing the Maker-Checker verification scorecard!"
+    )
+    assert "Score" in pr_body or "Approved" in pr_body, (
+        f"PR #{matched_pr['number']} description is missing peer review audit score!"
+    )
+
+    # 5. Assert Reproduction Unit Test is committed into the PR branch
+    pr_files = get_pull_request_files(matched_pr["number"])
+    filenames = [f.get("filename", "") for f in pr_files]
+    assert any(fn.startswith("tests/test_repro_") for fn in filenames), (
+        f"PR #{matched_pr['number']} is missing committed reproduction test in tests/! Changed files: {filenames}"
+    )
+    print(f"  Verified Reproduction Test committed in PR: {filenames}")
 
 
 if __name__ == "__main__":

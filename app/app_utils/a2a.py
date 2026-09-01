@@ -39,7 +39,7 @@ try:
     from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
     from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
     A2A_AVAILABLE = True
-except Exception:
+except Exception as e:
     A2A_AVAILABLE = False
     DefaultServerCallContextBuilder = object
     AgentCapabilities = object

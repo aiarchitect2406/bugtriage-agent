@@ -47,4 +47,26 @@ def test_sandbox_tools_subprocess_execution():
     assert result["sandbox_result"]["post_patch_test_passed"] is True
 
 
+def test_delete_geap_sandbox_safe_handling():
+    """Verifies that delete_geap_sandbox safely handles None and missing sandboxes."""
+    from app.tools.sandbox_tools import delete_geap_sandbox
+    assert delete_geap_sandbox(None) is True
+
+
+def test_sandbox_tools_with_multi_file_context():
+    """Verifies execute_reproduction_and_sandbox_fix with multi_file_context."""
+    multi_ctx = {
+        "services/models.py": "class Payment: pass\n",
+        "services/currency.py": "def convert(val): return val\n",
+    }
+    result = execute_reproduction_and_sandbox_fix(
+        issue_id="BUG-MULTI-001",
+        stack_trace="ZeroDivisionError: division by zero in settlement_engine.py",
+        source_file_path="services/settlement_engine.py",
+        multi_file_context=multi_ctx,
+    )
+    assert result["status"] == "SUCCESS"
+    assert result["sandbox_result"]["status"] == "PASSED"
+
+
 

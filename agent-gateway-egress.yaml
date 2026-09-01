@@ -1,0 +1,7 @@
+name: projects/nithin-usbaws-aiml-solns-demos/locations/us-central1/agentGateways/bugtriage-agent-gateway
+protocols:
+  - MCP
+googleManaged:
+  governedAccessPath: AGENT_TO_ANYWHERE
+registries:
+  - //agentregistry.googleapis.com/projects/539424669613/locations/us-central1

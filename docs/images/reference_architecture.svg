@@ -1,0 +1,579 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 980" width="1600" height="980" style="background:#ffffff; font-family:'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Drop Shadows -->
+    <filter id="shadow-subtle" x="-4%" y="-4%" width="108%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05" />
+    </filter>
+    <filter id="shadow-card" x="-4%" y="-4%" width="108%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.07" />
+    </filter>
+    <filter id="shadow-lg" x="-3%" y="-3%" width="106%" height="106%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8"/>
+    </marker>
+    <marker id="arrow-navy" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#188038"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <!-- ==================== 1. TOP HEADER BAR ==================== -->
+  <rect x="0" y="0" width="1600" height="76" fill="#1a73e8"/>
+  <g transform="translate(36, 18)">
+    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" fill="#ffffff" transform="scale(1.3)"/>
+    <text x="44" y="24" fill="#ffffff" font-size="21" font-weight="700" letter-spacing="-0.3">Google Cloud Architecture Center</text>
+    <text x="44" y="44" fill="#e8f0fe" font-size="13.5" font-weight="400">Reference Architecture: Autonomous Bug Triage &amp; Auto-Remediation (ADK 2.0 &amp; GEAP)</text>
+  </g>
+  <rect x="1390" y="22" width="174" height="32" rx="16" fill="#1557b0"/>
+  <text x="1477" y="43" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="0.5">REFERENCE PATTERN</text>
+
+  <!-- ==================== 2. WORKFLOW LIFECYCLE BREADCRUMB ==================== -->
+  <rect x="0" y="76" width="1600" height="42" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <g transform="translate(36, 102)" font-size="12" font-weight="600">
+    <text x="0" y="0" fill="#475569" font-weight="700" letter-spacing="0.5">WORKFLOW LIFECYCLE:</text>
+    <text x="156" y="0" fill="#1a73e8">❶ Issue Reported</text>
+    <text x="286" y="0" fill="#94a3b8">→</text>
+    <text x="306" y="0" fill="#1a73e8">❷ Keyless WIF Ingress</text>
+    <text x="468" y="0" fill="#94a3b8">→</text>
+    <text x="488" y="0" fill="#1a73e8">❸ Workflow Coordinator</text>
+    <text x="668" y="0" fill="#94a3b8">→</text>
+    <text x="688" y="0" fill="#e37400">❹ Provision Sandbox</text>
+    <text x="838" y="0" fill="#94a3b8">→</text>
+    <text x="858" y="0" fill="#e37400">❺ Sandbox Code Exec</text>
+    <text x="1016" y="0" fill="#94a3b8">→</text>
+    <text x="1036" y="0" fill="#0d9488">❻ Results to Runtime</text>
+    <text x="1194" y="0" fill="#94a3b8">→</text>
+    <text x="1214" y="0" fill="#188038">❼ Governed Egress (mTLS)</text>
+    <text x="1394" y="0" fill="#94a3b8">→</text>
+    <text x="1414" y="0" fill="#188038">❽ 1-Click Merge</text>
+  </g>
+
+  <!-- ==================== 3. INGRESS COLUMN: GITHUB PLATFORM (Left) ==================== -->
+  <!-- Bounds: x: 36..256 (w=220), y: 136..844 (h=708) -->
+  <g id="github-platform-container">
+    <rect x="36" y="136" width="220" height="708" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4"/>
+    
+    <!-- Platform Header -->
+    <path d="M60 152 C54.48 152 50 156.48 50 162 C50 166.42 52.87 170.17 56.84 171.5 C57.34 171.59 57.52 171.28 57.52 171.02 C57.52 170.78 57.51 170 57.51 169.15 C54.72 169.76 54.14 167.8 54.14 167.8 C53.69 166.65 53.04 166.34 53.04 166.34 C52.13 165.71 53.11 165.73 53.11 165.73 C54.12 165.8 54.65 166.78 54.65 166.78 C55.55 168.32 57 167.88 57.58 167.62 C57.67 166.96 57.93 166.52 58.22 166.26 C56 166.01 53.65 165.14 53.65 161.3 C53.65 160.2 54.04 159.31 54.69 158.61 C54.58 158.35 54.24 157.33 54.79 155.96 C54.79 155.96 55.63 155.69 57.54 156.99 C58.34 156.77 59.19 156.66 60.04 156.66 C60.89 156.66 61.74 156.77 62.54 156.99 C64.45 155.69 65.29 155.69 65.29 155.69 C65.84 157.33 65.5 158.35 65.39 158.61 C66.04 159.31 66.43 160.2 66.43 161.3 C66.43 165.15 64.07 166 61.84 166.25 C62.21 166.57 62.53 167.18 62.53 168.13 C62.53 169.5 62.52 170.6 62.52 171.02 C62.52 171.29 62.7 171.6 63.21 171.5 C67.18 170.16 70.04 166.42 70.04 162 C70.04 156.48 65.56 152 60 152 Z" fill="#24292f"/>
+    <text x="78" y="166" fill="#0f172a" font-size="13" font-weight="700">GitHub Platform</text>
+    <text x="78" y="179" fill="#64748b" font-size="10">Incident Ingress Source</text>
+
+    <!-- Card 1: Software Engineer / SRE -->
+    <rect x="48" y="194" width="196" height="116" rx="12" fill="#ffffff" stroke="#1a73e8" stroke-width="1.8" filter="url(#shadow-card)"/>
+    <circle cx="146" cy="226" r="20" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <path d="M136 223 A10 10 0 1 1 156 223 A10 10 0 1 1 136 223 Z M127 240 C127 233 135 231 146 231 C157 231 165 233 165 240 Z" fill="#1a73e8"/>
+    <text x="146" y="260" fill="#0f172a" font-size="12" font-weight="700" text-anchor="middle">Software Engineer</text>
+    <text x="146" y="274" fill="#64748b" font-size="10" text-anchor="middle">SRE / Incident Reporter</text>
+    <rect x="76" y="282" width="140" height="20" rx="10" fill="#e8f0fe"/>
+    <text x="146" y="295" fill="#1a73e8" font-size="9.5" font-weight="700" text-anchor="middle">1. REPORTS BUG</text>
+
+    <!-- Arrow 1: Software Engineer -> Target Repository -->
+    <path d="M 146 310 L 146 342" stroke="#1a73e8" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+    <circle cx="146" cy="326" r="9" fill="#1a73e8"/>
+    <text x="146" y="329" fill="#ffffff" font-size="9" font-weight="700" text-anchor="middle">1</text>
+
+    <!-- Card 2: Target Repository -->
+    <rect x="48" y="344" width="196" height="124" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadow-subtle)"/>
+    <rect x="58" y="354" width="26" height="26" rx="6" fill="#e8f0fe"/>
+    <text x="71" y="372" fill="#1a73e8" font-size="15" text-anchor="middle">📦</text>
+    <text x="92" y="367" fill="#0f172a" font-size="11.5" font-weight="700">Target Repository</text>
+    <text x="92" y="379" fill="#64748b" font-size="9.5">Microservice Codebase</text>
+    <line x1="58" y1="388" x2="234" y2="388" stroke="#f1f5f9" stroke-width="1"/>
+    <text x="60" y="405" fill="#334155" font-size="9.5">• Issues &amp; Stack Traces</text>
+    <text x="60" y="420" fill="#334155" font-size="9.5">• .github/CODEOWNERS</text>
+    <rect x="58" y="434" width="176" height="22" rx="4" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1"/>
+    <text x="146" y="449" fill="#0f766e" font-size="8.5" font-weight="700" text-anchor="middle">SECURE CHECKOUT TARGET (mTLS)</text>
+
+    <!-- Arrow: Webhook from Target Repository to GitHub Actions -->
+    <line x1="146" y1="468" x2="146" y2="494" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow-navy)"/>
+    <rect x="114" y="473" width="64" height="15" rx="3" fill="#f1f5f9"/>
+    <text x="146" y="484" fill="#475569" font-size="8" font-weight="600" text-anchor="middle">Webhook</text>
+
+    <!-- Card 3: GitHub Actions -->
+    <rect x="48" y="496" width="196" height="124" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadow-subtle)"/>
+    <rect x="58" y="506" width="26" height="26" rx="6" fill="#fef7e0"/>
+    <text x="71" y="524" fill="#e37400" font-size="15" text-anchor="middle">⚡</text>
+    <text x="92" y="519" fill="#0f172a" font-size="11.5" font-weight="700">GitHub Actions</text>
+    <text x="92" y="531" fill="#e37400" font-size="9.5" font-weight="600">triage-on-issue.yml</text>
+    <line x1="58" y1="540" x2="234" y2="540" stroke="#f1f5f9" stroke-width="1"/>
+    <text x="60" y="558" fill="#334155" font-size="9.5">• Triggered by new issue</text>
+    <text x="60" y="574" fill="#334155" font-size="9.5">• Requests ephemeral OIDC JWT</text>
+    <rect x="58" y="588" width="176" height="20" rx="4" fill="#ecfdf5"/>
+    <text x="146" y="602" fill="#065f46" font-size="8.5" font-weight="700" text-anchor="middle">ZERO STATIC CREDENTIALS</text>
+
+    <!-- Card 4: Ingress Security Policy -->
+    <rect x="48" y="636" width="196" height="188" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow-subtle)"/>
+    <rect x="58" y="646" width="26" height="26" rx="6" fill="#f8fafc"/>
+    <text x="71" y="664" fill="#475569" font-size="14" text-anchor="middle">🛡️</text>
+    <text x="92" y="659" fill="#0f172a" font-size="11" font-weight="700">Zero-Trust Contract</text>
+    <text x="92" y="671" fill="#64748b" font-size="9">Ingress Security Boundary</text>
+    <line x1="58" y1="679" x2="234" y2="679" stroke="#f1f5f9" stroke-width="1"/>
+    <text x="60" y="697" fill="#475569" font-size="9">• Direct :query invocation</text>
+    <text x="60" y="713" fill="#475569" font-size="9">• Bounded repository scope</text>
+    <text x="60" y="729" fill="#475569" font-size="9">• roles/aiplatform.user</text>
+    <text x="60" y="745" fill="#475569" font-size="9">• SPIFFE verifiable identity</text>
+    <rect x="58" y="784" width="176" height="26" rx="5" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="146" y="801" fill="#475569" font-size="8.5" font-weight="700" text-anchor="middle">LEAST PRIVILEGE BOUNDARY</text>
+  </g>
+
+  <!-- ==================== 4. GOOGLE CLOUD PLATFORM PERIMETER ==================== -->
+  <!-- Bounds: x: 278..1564 (w=1286), y: 136..844 (h=708) -->
+  <g id="gcp-perimeter">
+    <rect x="278" y="136" width="1286" height="708" rx="20" fill="#ffffff" stroke="#1a73e8" stroke-width="2" filter="url(#shadow-lg)"/>
+    
+    <!-- GCP Perimeter Header -->
+    <path d="M312 152 C310.67 148.59 307.64 146 304 146 C301.11 146 298.6 147.64 297.35 150.04 C294.34 150.36 292 152.91 292 156 C292 159.31 294.69 162 298 162 L311 162 C313.76 162 316 159.76 316 157 C316 154.36 313.95 152.22 311.35 152.04 Z" fill="#1a73e8" transform="scale(1.05) translate(-10, -5)"/>
+    <text x="328" y="165" fill="#0f172a" font-size="15" font-weight="700">Google Cloud Platform</text>
+    <text x="532" y="165" fill="#64748b" font-size="13" font-weight="500">(Autonomous Agent Environment)</text>
+  </g>
+
+  <!-- ==================== TIER 1: ZERO-TRUST KEYLESS INGRESS ==================== -->
+  <!-- Bounds: x: 298..418 (w=120), y: 184..428 (h=244) -->
+  <g id="tier-zero-trust-ingress">
+    <rect x="298" y="184" width="120" height="244" rx="14" fill="#ffffff" stroke="#e37400" stroke-width="1.8" filter="url(#shadow-card)"/>
+    <rect x="298" y="184" width="120" height="34" rx="14" fill="#fef7e0"/>
+    <rect x="298" y="202" width="120" height="16" fill="#fef7e0"/>
+    <text x="358" y="205" fill="#b45309" font-size="10" font-weight="700" text-anchor="middle">ZERO-TRUST INGRESS</text>
+
+    <rect x="306" y="226" width="104" height="192" rx="8" fill="#ffffff" stroke="#fde68a" stroke-width="1.2" filter="url(#shadow-subtle)"/>
+    <circle cx="358" cy="254" r="16" fill="#fef3c7"/>
+    <text x="358" y="260" fill="#d97706" font-size="16" text-anchor="middle">🔑</text>
+    <text x="358" y="284" fill="#0f172a" font-size="11" font-weight="700" text-anchor="middle">Cloud IAM WIF</text>
+    <text x="358" y="297" fill="#92400e" font-size="9" font-weight="600" text-anchor="middle">Workload Identity</text>
+    <line x1="314" y1="305" x2="402" y2="305" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <text x="358" y="324" fill="#475569" font-size="8.5" text-anchor="middle">Exchanges GitHub</text>
+    <text x="358" y="338" fill="#475569" font-size="8.5" text-anchor="middle">OIDC token keylessly</text>
+    <text x="358" y="356" fill="#166534" font-size="8.5" font-weight="600" text-anchor="middle">roles/aiplatform.user</text>
+    
+    <rect x="312" y="380" width="92" height="24" rx="4" fill="#ecfdf5"/>
+    <text x="358" y="396" fill="#065f46" font-size="8" font-weight="700" text-anchor="middle">KEYLESS AUTH</text>
+  </g>
+
+  <!-- ==================== TIER 2: VERTEX AI AGENT RUNTIME (CONTROL PLANE) ==================== -->
+  <!-- Bounds: x: 432..1096 (w=664), y: 184..428 (h=244) -->
+  <g id="tier-agent-runtime">
+    <rect x="432" y="184" width="664" height="244" rx="14" fill="#ffffff" stroke="#1a73e8" stroke-width="2" filter="url(#shadow-card)"/>
+    <rect x="432" y="184" width="664" height="34" rx="14" fill="#e8f0fe"/>
+    <rect x="432" y="202" width="664" height="16" fill="#e8f0fe"/>
+    
+    <!-- Runtime Header -->
+    <circle cx="450" cy="201" r="8" fill="#1a73e8"/>
+    <text x="450" y="205" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">⚡</text>
+    <text x="466" y="206" fill="#1a73e8" font-size="12" font-weight="700">Vertex AI Agent Runtime</text>
+    <text x="622" y="206" fill="#475569" font-size="10.5" font-weight="600">(Control Plane &amp; Orchestrator — ADK 2.0 Graph Engine)</text>
+
+    <!-- Card 1: Workflow Coordinator -->
+    <g id="node-coordinator">
+      <rect x="442" y="226" width="150" height="192" rx="10" fill="#f8fafc" stroke="#c084fc" stroke-width="1.8"/>
+      <circle cx="517" cy="254" r="16" fill="#f3e8ff"/>
+      <text x="517" y="260" fill="#9333ea" font-size="16" text-anchor="middle">⚙️</text>
+      <text x="517" y="284" fill="#0f172a" font-size="11" font-weight="700" text-anchor="middle">Workflow Coordinator</text>
+      <text x="517" y="298" fill="#9333ea" font-size="9" font-weight="600" text-anchor="middle">Central Orchestrator</text>
+      <line x1="452" y1="306" x2="582" y2="306" stroke="#e9d5ff" stroke-width="1"/>
+      
+      <text x="517" y="325" fill="#475569" font-size="8.5" text-anchor="middle">Receives :query Ingress</text>
+      <text x="517" y="340" fill="#475569" font-size="8.5" text-anchor="middle">Coordinates Intake &amp; Sandbox</text>
+      <text x="517" y="356" fill="#166534" font-size="8" font-weight="600" text-anchor="middle">Dispatches Secure Calls (mTLS)</text>
+
+      <rect x="450" y="380" width="134" height="24" rx="4" fill="#faf5ff"/>
+      <text x="517" y="396" fill="#7c3aed" font-size="8.5" font-weight="700" text-anchor="middle">CENTRAL ORCHESTRATOR</text>
+    </g>
+
+    <!-- Arrow Coordinator -> Stage 1 -->
+    <path d="M 592 316 L 602 316" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Stage 1: Ingest & Sanitize (Cloud DLP) -->
+    <g id="node-ingest">
+      <rect x="604" y="226" width="150" height="192" rx="10" fill="#f8fafc" stroke="#fed7aa" stroke-width="1.5"/>
+      <circle cx="679" cy="254" r="16" fill="#ffedd5"/>
+      <text x="679" y="260" fill="#ea580c" font-size="16" text-anchor="middle">🛡️</text>
+      <text x="679" y="284" fill="#0f172a" font-size="11" font-weight="700" text-anchor="middle">1. Ingest &amp; Sanitize</text>
+      <text x="679" y="298" fill="#ea580c" font-size="9" font-weight="600" text-anchor="middle">ingest_node • Cloud DLP</text>
+      <line x1="614" y1="306" x2="744" y2="306" stroke="#e2e8f0" stroke-width="1"/>
+      
+      <text x="679" y="325" fill="#475569" font-size="8.5" text-anchor="middle">Scrubs API keys, tokens,</text>
+      <text x="679" y="340" fill="#475569" font-size="8.5" text-anchor="middle">passwords &amp; PII (OWASP LLM06)</text>
+      <text x="679" y="356" fill="#1e293b" font-size="8" font-weight="600" text-anchor="middle">Extracts Stack Frames</text>
+
+      <rect x="612" y="380" width="134" height="24" rx="4" fill="#fef2f2"/>
+      <text x="679" y="396" fill="#991b1b" font-size="8.5" font-weight="700" text-anchor="middle">ZERO DATA LEAKAGE</text>
+    </g>
+
+    <!-- Arrow Stage 1 -> Stage 2 -->
+    <path d="M 754 316 L 764 316" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Stage 2: Vector Dedupe -->
+    <g id="node-dedupe">
+      <rect x="766" y="226" width="150" height="192" rx="10" fill="#f8fafc" stroke="#bbf7d0" stroke-width="1.5"/>
+      <circle cx="841" cy="254" r="16" fill="#dcfce7"/>
+      <text x="841" y="260" fill="#16a34a" font-size="16" text-anchor="middle">🔍</text>
+      <text x="841" y="284" fill="#0f172a" font-size="11" font-weight="700" text-anchor="middle">2. Vector Dedupe</text>
+      <text x="841" y="298" fill="#16a34a" font-size="9" font-weight="600" text-anchor="middle">dedupe_node • Cosine Sim</text>
+      <line x1="776" y1="306" x2="906" y2="306" stroke="#e2e8f0" stroke-width="1"/>
+      
+      <text x="841" y="325" fill="#475569" font-size="8.5" text-anchor="middle">Model: <tspan fill="#1e40af" font-weight="600">gemini-3.7-flash</tspan></text>
+      <text x="841" y="340" fill="#475569" font-size="8.5" text-anchor="middle">Embeddings Cosine Match</text>
+      <text x="841" y="356" fill="#1e293b" font-size="8" font-weight="600" text-anchor="middle">Links Duplicate to Master</text>
+
+      <rect x="774" y="380" width="134" height="24" rx="4" fill="#ecfdf5"/>
+      <text x="841" y="396" fill="#065f46" font-size="8.5" font-weight="700" text-anchor="middle">SUPPRESSES NOISE</text>
+    </g>
+
+    <!-- Arrow Stage 2 -> Stage 3 -->
+    <path d="M 916 316 L 926 316" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Stage 3: CODEOWNERS & SLA Routing -->
+    <g id="node-codeowners">
+      <rect x="928" y="226" width="158" height="192" rx="10" fill="#f8fafc" stroke="#bfdbfe" stroke-width="1.5"/>
+      <circle cx="1007" cy="254" r="16" fill="#dbeafe"/>
+      <text x="1007" y="260" fill="#2563eb" font-size="16" text-anchor="middle">👥</text>
+      <text x="1007" y="284" fill="#0f172a" font-size="11" font-weight="700" text-anchor="middle">3. CODEOWNERS</text>
+      <text x="1007" y="298" fill="#2563eb" font-size="9" font-weight="600" text-anchor="middle">enrich_node • Routing</text>
+      <line x1="938" y1="306" x2="1076" y2="306" stroke="#e2e8f0" stroke-width="1"/>
+      
+      <text x="1007" y="325" fill="#475569" font-size="8.5" text-anchor="middle">Frame Ownership Attribution</text>
+      <text x="1007" y="340" fill="#475569" font-size="8.5" text-anchor="middle">Routes to Team Lead Handle</text>
+      <text x="1007" y="356" fill="#1e293b" font-size="8" font-weight="600" text-anchor="middle">Sets P0 (2h) / P1 (24h) SLA</text>
+
+      <rect x="936" y="380" width="142" height="24" rx="4" fill="#eff6ff"/>
+      <text x="1007" y="396" fill="#1d4ed8" font-size="8.5" font-weight="700" text-anchor="middle">SLA: P0 / P1 BOUNDED</text>
+    </g>
+  </g>
+
+  <!-- ==================== TIER 3: VERTEX AI AGENT SANDBOX (EXECUTION PLANE) ==================== -->
+  <!-- Bounds: x: 298..1096 (w=798), y: 494..830 (h=336) -->
+  <g id="tier-agent-sandbox">
+    <rect x="298" y="494" width="798" height="336" rx="16" fill="#ffffff" stroke="#e37400" stroke-width="2" filter="url(#shadow-card)"/>
+    <rect x="298" y="494" width="798" height="38" rx="16" fill="#fff7ed"/>
+    <rect x="298" y="514" width="798" height="18" fill="#fff7ed"/>
+    
+    <!-- Sandbox Header -->
+    <circle cx="318" cy="513" r="9" fill="#e37400"/>
+    <text x="318" y="518" fill="#ffffff" font-size="11" text-anchor="middle">⚗️</text>
+    <text x="334" y="518" fill="#c2410c" font-size="12.5" font-weight="700">Vertex AI Agent Sandbox (Code Execution Environment)</text>
+    <text x="702" y="518" fill="#9a3412" font-size="10" font-weight="600">• client.agent_engines.sandboxes.create</text>
+    
+    <rect x="944" y="502" width="142" height="22" rx="11" fill="#ea580c"/>
+    <text x="1015" y="517" fill="#ffffff" font-size="9" font-weight="700" text-anchor="middle" letter-spacing="0.5">BUILT-IN CODE EXECUTOR</text>
+
+    <!-- Component A: Maker (Gemini 3.1 Pro) -->
+    <g id="sandbox-maker">
+      <rect x="310" y="542" width="242" height="274" rx="12" fill="#faf5ff" stroke="#c084fc" stroke-width="1.5"/>
+      <circle cx="431" cy="570" r="16" fill="#f3e8ff"/>
+      <text x="431" y="576" fill="#9333ea" font-size="16" text-anchor="middle">✨</text>
+      <text x="431" y="600" fill="#0f172a" font-size="12.5" font-weight="700" text-anchor="middle">Gemini 3.1 Pro</text>
+      <text x="431" y="614" fill="#9333ea" font-size="9.5" font-weight="700" text-anchor="middle">[MAKER REASONING]</text>
+      <line x1="322" y1="622" x2="540" y2="622" stroke="#e9d5ff" stroke-width="1"/>
+
+      <text x="431" y="642" fill="#1e293b" font-size="10" font-weight="700" text-anchor="middle">Multi-File Context Synthesis</text>
+      <text x="431" y="660" fill="#475569" font-size="9" text-anchor="middle">• Analyzes stack trace call paths</text>
+      <text x="431" y="676" fill="#0f766e" font-size="8.5" font-weight="600" text-anchor="middle">• Secure repo checkout via Gateway</text>
+      <text x="431" y="692" fill="#475569" font-size="9" text-anchor="middle">• Synthesizes test_repro.py + fix.diff</text>
+
+      <rect x="322" y="728" width="218" height="66" rx="8" fill="#ffffff" stroke="#e9d5ff" stroke-width="1"/>
+      <text x="431" y="750" fill="#7c3aed" font-size="9" font-weight="700" text-anchor="middle">OUTPUTS CANDIDATE ARTIFACTS</text>
+      <text x="431" y="768" fill="#475569" font-size="8.5" text-anchor="middle">test_repro.py + fix.diff</text>
+      <text x="431" y="782" fill="#6d28d9" font-size="8" font-weight="600" text-anchor="middle">Red-to-Green Specification</text>
+    </g>
+
+    <!-- Arrow Maker -> Pytest -->
+    <path d="M 552 654 L 574 654" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-amber)"/>
+    <rect x="554" y="632" width="20" height="18" rx="4" fill="#fff7ed"/>
+    <text x="564" y="645" fill="#c2410c" font-size="8" font-weight="700" text-anchor="middle">Diff</text>
+
+    <!-- Component B: Pytest Code Execution Runner -->
+    <g id="sandbox-pytest">
+      <rect x="576" y="542" width="254" height="274" rx="12" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+      <circle cx="703" cy="570" r="16" fill="#fef3c7"/>
+      <text x="703" y="576" fill="#d97706" font-size="16" text-anchor="middle">&gt;_</text>
+      <text x="703" y="600" fill="#0f172a" font-size="12.5" font-weight="700" text-anchor="middle">Pytest Code Exec</text>
+      <text x="703" y="614" fill="#d97706" font-size="9.5" font-weight="700" text-anchor="middle">[SANDBOX RUNNER]</text>
+      <line x1="588" y1="622" x2="818" y2="622" stroke="#fde68a" stroke-width="1"/>
+
+      <text x="703" y="642" fill="#1e293b" font-size="10" font-weight="700" text-anchor="middle">Red-to-Green Automated Loop</text>
+      
+      <!-- Step 1: Red -->
+      <rect x="588" y="652" width="230" height="32" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+      <text x="703" y="672" fill="#991b1b" font-size="9" font-weight="700" text-anchor="middle">1. Repro Fails on Base (RED)</text>
+
+      <!-- Step 2: Green -->
+      <rect x="588" y="690" width="230" height="32" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+      <text x="703" y="710" fill="#166534" font-size="9" font-weight="700" text-anchor="middle">2. Repro Passes with Diff (GREEN)</text>
+
+      <rect x="588" y="734" width="230" height="60" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+      <text x="703" y="756" fill="#047857" font-size="10" font-weight="700" text-anchor="middle">✓ ZERO HOST MUTATION</text>
+      <text x="703" y="772" fill="#065f46" font-size="8.5" text-anchor="middle">Isolated ephemeral /tmp workspace</text>
+      <text x="703" y="786" fill="#047857" font-size="8" font-weight="600" text-anchor="middle">Hermetic Process Boundary</text>
+    </g>
+
+    <!-- Arrow Pytest -> Checker -->
+    <path d="M 830 654 L 852 654" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <rect x="832" y="632" width="20" height="18" rx="4" fill="#ecfdf5"/>
+    <text x="842" y="645" fill="#16a34a" font-size="8" font-weight="700" text-anchor="middle">Pass</text>
+
+    <!-- Component C: Checker (Claude Sonnet 4.6 on Vertex AI) -->
+    <g id="sandbox-checker">
+      <rect x="854" y="542" width="230" height="274" rx="12" fill="#fff7ed" stroke="#fb923c" stroke-width="1.5"/>
+      <circle cx="969" cy="570" r="16" fill="#ffedd5"/>
+      <text x="969" y="576" fill="#ea580c" font-size="16" text-anchor="middle">✳️</text>
+      <text x="969" y="600" fill="#0f172a" font-size="12.5" font-weight="700" text-anchor="middle">Claude Sonnet 4.6</text>
+      <text x="969" y="614" fill="#ea580c" font-size="9.5" font-weight="700" text-anchor="middle">[CHECKER ON VERTEX]</text>
+      <line x1="866" y1="622" x2="1072" y2="622" stroke="#fed7aa" stroke-width="1"/>
+
+      <text x="969" y="642" fill="#1e293b" font-size="10" font-weight="700" text-anchor="middle">Security Peer Review</text>
+      <text x="969" y="660" fill="#475569" font-size="9" text-anchor="middle">• CWE-476 (Null Pointer Deref)</text>
+      <text x="969" y="676" fill="#475569" font-size="9" text-anchor="middle">• CWE-89 (SQL Injection)</text>
+      <text x="969" y="692" fill="#475569" font-size="9" text-anchor="middle">• Style &amp; Architectural Hygiene</text>
+
+      <rect x="866" y="718" width="206" height="34" rx="6" fill="#ffffff" stroke="#fed7aa" stroke-width="1"/>
+      <text x="969" y="739" fill="#16a34a" font-size="9.5" font-weight="700" text-anchor="middle">Score: 94/100 (Threshold ≥ 90)</text>
+
+      <rect x="866" y="758" width="206" height="36" rx="6" fill="#ecfdf5" stroke="#86efac" stroke-width="1"/>
+      <text x="969" y="780" fill="#047857" font-size="10.5" font-weight="700" text-anchor="middle">VERDICT: APPROVED</text>
+    </g>
+  </g>
+
+  <!-- ==================== TIER 4: COMPACT GEAP STATE & MEMORY TIER (Top Right) ==================== -->
+  <!-- User Request: "decrease the size of the GEAP state and memory tier. You can just put a purple box and says Vertex AI Agent sessions and Memory Bank, something like that, that should be good enough. Don't write like too much of things inside it." -->
+  <!-- Bounds: x: 1114..1546 (w=432), y: 184..276 (h=92) -->
+  <g id="tier-memory-compact">
+    <rect x="1114" y="184" width="432" height="92" rx="12" fill="#ffffff" stroke="#7c3aed" stroke-width="1.8" filter="url(#shadow-card)"/>
+    <rect x="1114" y="184" width="432" height="30" rx="12" fill="#f5f3ff"/>
+    <rect x="1114" y="200" width="432" height="14" fill="#f5f3ff"/>
+    
+    <circle cx="1132" cy="199" r="8" fill="#7c3aed"/>
+    <text x="1132" y="203" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">🧠</text>
+    <text x="1148" y="203" fill="#6d28d9" font-size="11.5" font-weight="700">Vertex AI Agent Sessions &amp; Memory Bank</text>
+    <text x="1534" y="203" fill="#7c3aed" font-size="9" font-weight="600" text-anchor="end">GEAP STATE &amp; MEMORY</text>
+
+    <!-- Content: Clean, concise, zero fluff -->
+    <text x="1132" y="234" fill="#1e293b" font-size="9.5" font-weight="600">• VertexAiSessionService:</text>
+    <text x="1274" y="234" fill="#475569" font-size="9.5">Turn state persistence &amp; sliding-window compaction (32k window)</text>
+    
+    <text x="1132" y="256" fill="#1e293b" font-size="9.5" font-weight="600">• VertexAiMemoryBank:</text>
+    <text x="1274" y="256" fill="#475569" font-size="9.5">Cross-session incident memory store (async recording, zero block)</text>
+  </g>
+
+  <!-- Bi-directional link between Runtime Coordinator and Memory Tier -->
+  <path d="M 1096 226 L 1112 226" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#arrow-purple)"/>
+  <path d="M 1112 238 L 1096 238" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#arrow-purple)"/>
+
+  <!-- ==================== TIER 5: GOOGLE CLOUD AGENT GATEWAY (EGRESS) ==================== -->
+  <!-- User Request: "have an Agent Gateway below it, where the Agent Gateway is now talking to Model Garden and external GitHub tools or any other tools, right? In that way you can save some space to actually do things over there." -->
+  <!-- Bounds: x: 1114..1546 (w=432), y: 290..448 (h=158) -->
+  <g id="tier-agent-gateway">
+    <rect x="1114" y="290" width="432" height="158" rx="14" fill="#ffffff" stroke="#188038" stroke-width="2" filter="url(#shadow-card)"/>
+    <rect x="1114" y="290" width="432" height="34" rx="14" fill="#e6f4ea"/>
+    <rect x="1114" y="308" width="432" height="16" fill="#e6f4ea"/>
+    
+    <circle cx="1132" cy="307" r="9" fill="#188038"/>
+    <text x="1132" y="312" fill="#ffffff" font-size="11" text-anchor="middle">🌐</text>
+    <text x="1148" y="312" fill="#137333" font-size="11.5" font-weight="700">Google Cloud Agent Gateway</text>
+    <text x="1320" y="312" fill="#475569" font-size="9" font-weight="600">(AGENT_TO_ANYWHERE)</text>
+    
+    <rect x="1470" y="297" width="66" height="20" rx="10" fill="#188038"/>
+    <text x="1503" y="311" fill="#ffffff" font-size="8" font-weight="700" text-anchor="middle">EGRESS</text>
+
+    <!-- Mode Badge -->
+    <rect x="1126" y="332" width="408" height="22" rx="4" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+    <text x="1330" y="347" fill="#166534" font-size="9" font-weight="700" text-anchor="middle">ZERO-TRUST OUTBOUND PROXY • CRYPTOGRAPHIC SPIFFE IDENTITY</text>
+
+    <!-- Gateway Core Capabilities -->
+    <text x="1132" y="374" fill="#1e293b" font-size="9">• Enforces Mutual Authentication (mTLS) on all outbound tool &amp; model calls</text>
+    <text x="1132" y="390" fill="#1e293b" font-size="9">• JIT Downscoped OAuth &amp; GitHub REST Tokens (ephemeral, least-privilege)</text>
+    <text x="1132" y="406" fill="#1e293b" font-size="9">• Real-Time Egress Inspection, Cloud Audit Logging &amp; OWASP LLM06 Policy</text>
+
+    <rect x="1126" y="418" width="408" height="22" rx="4" fill="#188038"/>
+    <text x="1330" y="433" fill="#ffffff" font-size="8.5" font-weight="700" text-anchor="middle" letter-spacing="0.5">100% GOVERNED OUTBOUND EGRESS</text>
+  </g>
+
+  <!-- ==================== TIER 5A & 5B: THE TWO EGRESS DESTINATIONS (Below Gateway) ==================== -->
+
+  <!-- Destination 1: Vertex AI Model Garden (Inference) -->
+  <!-- Bounds: x: 1114..1320 (w=206), y: 494..830 (h=336) -->
+  <g id="tier-model-garden">
+    <rect x="1114" y="494" width="206" height="336" rx="14" fill="#ffffff" stroke="#1a73e8" stroke-width="1.8" filter="url(#shadow-card)"/>
+    <rect x="1114" y="494" width="206" height="34" rx="14" fill="#e8f0fe"/>
+    <rect x="1114" y="512" width="206" height="16" fill="#e8f0fe"/>
+    
+    <circle cx="1128" cy="511" r="7" fill="#1a73e8"/>
+    <text x="1128" y="514" fill="#ffffff" font-size="9" text-anchor="middle">🏛️</text>
+    <text x="1140" y="515" fill="#1a73e8" font-size="11" font-weight="700">Model Garden</text>
+    <rect x="1238" y="501" width="72" height="18" rx="9" fill="#1a73e8"/>
+    <text x="1274" y="513" fill="#ffffff" font-size="8" font-weight="700" text-anchor="middle">INFERENCE</text>
+
+    <rect x="1124" y="536" width="186" height="20" rx="4" fill="#e8f0fe"/>
+    <text x="1217" y="550" fill="#1557b0" font-size="8.5" font-weight="700" text-anchor="middle">GOVERNED INFERENCE TIER</text>
+
+    <!-- Model 1: Gemini 3.7 Flash -->
+    <g transform="translate(1124, 564)">
+      <rect x="0" y="0" width="186" height="68" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <circle cx="16" cy="20" r="9" fill="#dbeafe"/>
+      <text x="16" y="24" fill="#1d4ed8" font-size="10" text-anchor="middle">⚡</text>
+      <text x="32" y="19" fill="#0f172a" font-size="10.5" font-weight="700">Gemini 3.7 Flash</text>
+      <text x="32" y="32" fill="#1e40af" font-size="8.5" font-weight="600">Routing &amp; Dedupe Tier</text>
+      <line x1="8" y1="40" x2="178" y2="40" stroke="#f1f5f9" stroke-width="1"/>
+      <text x="93" y="54" fill="#475569" font-size="8.5" text-anchor="middle">Sub-second Vector Search</text>
+    </g>
+
+    <!-- Model 2: Gemini 3.1 Pro -->
+    <g transform="translate(1124, 642)">
+      <rect x="0" y="0" width="186" height="82" rx="8" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+      <circle cx="16" cy="22" r="9" fill="#f3e8ff"/>
+      <text x="16" y="26" fill="#9333ea" font-size="10" text-anchor="middle">✨</text>
+      <text x="32" y="20" fill="#0f172a" font-size="10.5" font-weight="700">Gemini 3.1 Pro</text>
+      <text x="32" y="33" fill="#7c3aed" font-size="8.5" font-weight="600">Reasoning &amp; Maker Tier</text>
+      <line x1="8" y1="42" x2="178" y2="42" stroke="#f1f5f9" stroke-width="1"/>
+      <text x="93" y="56" fill="#475569" font-size="8.5" text-anchor="middle">Multi-File Forensics &amp; Fixes</text>
+      <text x="93" y="70" fill="#7c3aed" font-size="8" font-weight="600" text-anchor="middle">repro.py + fix.diff Synthesis</text>
+    </g>
+
+    <!-- Model 3: Claude Sonnet 4.6 -->
+    <g transform="translate(1124, 734)">
+      <rect x="0" y="0" width="186" height="68" rx="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1"/>
+      <circle cx="16" cy="20" r="9" fill="#ffedd5"/>
+      <text x="16" y="24" fill="#ea580c" font-size="10" text-anchor="middle">✳️</text>
+      <text x="32" y="19" fill="#0f172a" font-size="10.5" font-weight="700">Claude Sonnet 4.6</text>
+      <text x="32" y="32" fill="#c2410c" font-size="8.5" font-weight="600">Checker Reviewer Tier</text>
+      <line x1="8" y1="40" x2="178" y2="40" stroke="#f1f5f9" stroke-width="1"/>
+      <text x="93" y="54" fill="#475569" font-size="8.5" text-anchor="middle">Independent Security Audit</text>
+    </g>
+    
+    <text x="1217" y="818" fill="#64748b" font-size="8" text-anchor="middle">Zero Customer Retraining • Bounded Tokens</text>
+  </g>
+
+  <!-- Destination 2: External Tools & GitHub Delivery (Pull Request #42) -->
+  <!-- Bounds: x: 1334..1546 (w=212), y: 494..830 (h=336) -->
+  <!-- User Request: "Agent Gateway is now talking to Model Garden and external GitHub tools or any other tools... rather than you send those arrows back all the way till pull request" -->
+  <g id="tier-github-delivery">
+    <rect x="1334" y="494" width="212" height="336" rx="14" fill="#ffffff" stroke="#188038" stroke-width="2" filter="url(#shadow-card)"/>
+    <rect x="1334" y="494" width="212" height="34" rx="14" fill="#e6f4ea"/>
+    <rect x="1334" y="512" width="212" height="16" fill="#e6f4ea"/>
+    
+    <circle cx="1348" cy="511" r="7" fill="#188038"/>
+    <text x="1348" y="514" fill="#ffffff" font-size="9" text-anchor="middle">📋</text>
+    <text x="1358" y="515" fill="#137333" font-size="11" font-weight="700">GitHub Delivery</text>
+    <rect x="1466" y="501" width="70" height="18" rx="9" fill="#188038"/>
+    <text x="1501" y="513" fill="#ffffff" font-size="8" font-weight="700" text-anchor="middle">DELIVERY</text>
+
+    <!-- Sub-feature 1: Secure Code Checkout Call -->
+    <rect x="1344" y="536" width="192" height="52" rx="6" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1"/>
+    <text x="1352" y="552" fill="#0f766e" font-size="9" font-weight="700">🔒 Secure Code Checkout (mTLS)</text>
+    <text x="1352" y="566" fill="#475569" font-size="8">• Clones target repo &amp; stack files</text>
+    <text x="1352" y="578" fill="#475569" font-size="8">• Reads .github/CODEOWNERS via API</text>
+
+    <!-- Sub-feature 2: Pull Request #42 Card -->
+    <rect x="1344" y="596" width="192" height="156" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow-subtle)"/>
+    <text x="1352" y="614" fill="#0f172a" font-size="11" font-weight="700">Pull Request #42</text>
+    <text x="1528" y="614" fill="#188038" font-size="8.5" font-weight="700" text-anchor="end">Auto-Remediation</text>
+    <line x1="1352" y1="622" x2="1528" y2="622" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <text x="1352" y="638" fill="#1e293b" font-size="9">• Verified minimal diff patch</text>
+    <text x="1352" y="652" fill="#1e293b" font-size="9">• Repro test (test_repro_42.py)</text>
+    <text x="1352" y="666" fill="#1e293b" font-size="9">• Maker-Checker consensus</text>
+    
+    <rect x="1352" y="674" width="176" height="38" rx="4" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="1360" y="689" fill="#475569" font-size="8.5">Security Score: <tspan fill="#16a34a" font-weight="700">94/100 (Pass)</tspan></text>
+    <text x="1360" y="704" fill="#475569" font-size="8.5">SLA Target Met: <tspan fill="#16a34a" font-weight="700">22 min (&lt;2h)</tspan></text>
+    
+    <text x="1352" y="726" fill="#64748b" font-size="8.5">Branch: <tspan fill="#0f172a" font-weight="600">fix/issue-42</tspan> • Assigned: <tspan fill="#0f172a" font-weight="600">@payments</tspan></text>
+    <text x="1352" y="740" fill="#166534" font-size="8.5" font-weight="600">Delivery: Agent Gateway mTLS Proxy</text>
+
+    <!-- Sub-feature 3: READY TO MERGE (1-Click Developer Signoff) -->
+    <rect x="1344" y="760" width="192" height="46" rx="8" fill="#188038"/>
+    <text x="1440" y="780" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="0.5">READY TO MERGE</text>
+    <text x="1440" y="795" fill="#e6f4ea" font-size="9" text-anchor="middle">❽ 1-Click Developer Signoff</text>
+    
+    <text x="1440" y="820" fill="#64748b" font-size="8" text-anchor="middle">Closed-Loop Incident Remediation</text>
+  </g>
+
+  <!-- ==================== TIER 6: OPERATIONAL FOUNDATIONS (BOTTOM BANNER) ==================== -->
+  <!-- Bounds: x: 36..1546 (w=1510), y: 864..932 (h=68) -->
+  <g id="tier-operational-foundations">
+    <rect x="36" y="864" width="1510" height="68" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="52" y="880" fill="#475569" font-size="10.5" font-weight="700" letter-spacing="0.5">GEAP ENTERPRISE OPERATIONAL FOUNDATIONS</text>
+
+    <!-- Foundation 1: Skill Registry -->
+    <rect x="52" y="888" width="478" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="64" y="903" fill="#0f172a" font-size="9.5" font-weight="700">1. GEAP Skill Registry</text>
+    <text x="64" y="915" fill="#64748b" font-size="8.5">7 enterprise skills (RCA, DLP, Routing, Patch, Review, PR)</text>
+    <rect x="442" y="896" width="78" height="18" rx="4" fill="#ecfdf5"/>
+    <text x="481" y="908" fill="#065f46" font-size="7.5" font-weight="700" text-anchor="middle">ENTERPRISE</text>
+
+    <!-- Foundation 2: Observability -->
+    <rect x="546" y="888" width="478" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="558" y="903" fill="#0f172a" font-size="9.5" font-weight="700">2. Observability &amp; Tracing</text>
+    <text x="558" y="915" fill="#64748b" font-size="8.5">Cloud Logging + OpenTelemetry (Phase INTENT &amp; OUTCOME)</text>
+    <rect x="936" y="896" width="78" height="18" rx="4" fill="#eff6ff"/>
+    <text x="975" y="908" fill="#1e40af" font-size="7.5" font-weight="700" text-anchor="middle">SUB-SECOND</text>
+
+    <!-- Foundation 3: Quality Flywheel -->
+    <rect x="1040" y="888" width="496" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="1052" y="903" fill="#0f172a" font-size="9.5" font-weight="700">3. 100% Quality Flywheel</text>
+    <text x="1052" y="915" fill="#64748b" font-size="8.5">3/3 Golden Trajectories Evaluated via tests/eval/run_eval.py</text>
+    <rect x="1448" y="896" width="78" height="18" rx="4" fill="#ecfdf5"/>
+    <text x="1487" y="908" fill="#065f46" font-size="7.5" font-weight="700" text-anchor="middle">100% PASS</text>
+  </g>
+
+  <!-- ==================== FLOW ARROWS & NUMERICAL BADGES (❶ to ❽) ==================== -->
+
+  <!-- ❷ Keyless WIF Ingress: GitHub Actions -> Cloud IAM WIF -->
+  <path d="M 244 558 L 272 558 L 272 306 L 296 306" stroke="#1a73e8" stroke-width="2.5" fill="none" marker-end="url(#arrow-blue)"/>
+  <circle cx="272" cy="432" r="11" fill="#1a73e8"/>
+  <text x="272" y="436" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">2</text>
+
+  <!-- ❸ Authenticated Query: Cloud IAM WIF -> Workflow Coordinator in Vertex AI Agent Runtime -->
+  <path d="M 418 306 L 440 306" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+  <circle cx="430" cy="290" r="10" fill="#1a73e8"/>
+  <text x="430" y="294" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">3</text>
+  <rect x="410" y="268" width="40" height="15" rx="3" fill="#1a73e8"/>
+  <text x="430" y="279" fill="#ffffff" font-size="8.5" font-weight="700" text-anchor="middle">:query</text>
+
+  <!-- ❹ Provisions Ephemeral Sandbox: Workflow Coordinator -> Agent Sandbox Maker -->
+  <path d="M 517 428 L 517 492" stroke="#e37400" stroke-width="2.5" marker-end="url(#arrow-amber)"/>
+  <rect x="388" y="450" width="258" height="22" rx="11" fill="#e37400"/>
+  <text x="517" y="465" fill="#ffffff" font-size="9.5" font-weight="700" text-anchor="middle">❹ PROVISIONS SANDBOX (sandboxes.create)</text>
+
+  <!-- ❺ Results to Runtime: Agent Sandbox Checker -> Agent Runtime Coordinator -->
+  <path d="M 969 494 L 969 430" stroke="#0d9488" stroke-width="2.5" marker-end="url(#arrow-teal)"/>
+  <rect x="844" y="450" width="250" height="22" rx="11" fill="#0d9488"/>
+  <text x="969" y="465" fill="#ffffff" font-size="9.5" font-weight="700" text-anchor="middle">❺ RETURNS VERIFIED PATCH &amp; SCORE (≥90)</text>
+
+  <!-- ❻ Governed Tool Egress: Runtime -> Agent Gateway -->
+  <!-- Agent Runtime right edge at x=1096, y=369 -> Agent Gateway left edge at x=1114, y=369 -->
+  <path d="M 1096 369 L 1112 369" stroke="#188038" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+  <circle cx="1105" cy="351" r="10" fill="#188038"/>
+  <text x="1105" y="355" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">6</text>
+
+  <!-- Agent Gateway Downward Egress Arrow to Model Garden -->
+  <!-- Gateway bottom at y=448, Model Garden top at y=494. Drop straight at x=1217 -->
+  <path d="M 1217 448 L 1217 492" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+  <rect x="1152" y="459" width="130" height="20" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1"/>
+  <text x="1217" y="473" fill="#1a73e8" font-size="8.5" font-weight="700" text-anchor="middle">MODEL EGRESS (mTLS)</text>
+
+  <!-- ❼ Agent Gateway Downward Egress Arrow to GitHub Delivery (Pull Request #42) -->
+  <!-- Gateway bottom at y=448, GitHub Delivery top at y=494. Drop straight at x=1440 -->
+  <path d="M 1440 448 L 1440 492" stroke="#188038" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+  <rect x="1350" y="459" width="180" height="20" rx="10" fill="#188038"/>
+  <text x="1440" y="473" fill="#ffffff" font-size="8.5" font-weight="700" text-anchor="middle">❼ GITHUB EGRESS (mTLS)</text>
+
+  <!-- ==================== FOOTER ATTRIBUTION ==================== -->
+  <text x="36" y="964" fill="#64748b" font-size="11" font-weight="500">Google Cloud Architecture Center • Built natively with Google ADK 2.0 &amp; Gemini Enterprise Agent Platform</text>
+  <text x="1564" y="964" fill="#1a73e8" font-size="11" font-weight="700" text-anchor="end">docs.cloud.google.com/architecture</text>
+</svg>

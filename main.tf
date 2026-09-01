@@ -15,7 +15,7 @@ provider "google" {
 
 variable "project_id" {
   type        = string
-  default     = "your-gcp-project-id"
+  default     = "nithin-usbaws-aiml-solns-demos"
   description = "Google Cloud Project ID"
 }
 
@@ -25,7 +25,13 @@ variable "region" {
   description = "Target deployment region"
 }
 
-# 1. GEAP Managed Agent Identity Service Account
+variable "github_repository" {
+  type        = string
+  default     = "aiarchitect2406/example-payment-svc"
+  description = "Target GitHub repository authorized for Workload Identity Federation"
+}
+
+# 1. Vertex AI Agent Runtime Managed Identity Service Account
 resource "google_service_account" "bug_triage_agent_sa" {
   account_id   = "bug-triage-agent-sa"
   display_name = "GEAP Managed Bug Triage Agent Service Account"
@@ -50,84 +56,55 @@ resource "google_project_iam_member" "agent_dlp_user" {
   member  = "serviceAccount:${google_service_account.bug_triage_agent_sa.email}"
 }
 
-# 3. Secret Manager Secret for GitHub Token
+# 3. GitHub Actions Ingress Runner Service Account
+resource "google_service_account" "bugtriage_runner_sa" {
+  account_id   = "bugtriage-runner-sa"
+  display_name = "GitHub Actions Bug Triage Ingress Runner"
+}
+
+resource "google_project_iam_member" "runner_aiplatform_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.bugtriage_runner_sa.email}"
+}
+
+# 4. Workload Identity Federation (WIF) Pool & Provider for GitHub Actions
+resource "google_iam_workload_identity_pool" "github_actions_pool" {
+  workload_identity_pool_id = "github-actions-pool"
+  display_name              = "GitHub Actions WIF Pool"
+  description               = "Identity pool for GitHub Actions keyless authentication"
+}
+
+resource "google_iam_workload_identity_pool_provider" "github_actions_provider" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_actions_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-actions-provider"
+  display_name                       = "GitHub Actions OIDC Provider"
+  description                        = "OIDC identity provider for GitHub Actions"
+
+  attribute_mapping = {
+    "google.subject"             = "assertion.sub"
+    "attribute.actor"            = "assertion.actor"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+  }
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+# 5. Authorize GitHub Target Repository to Impersonate the Ingress Runner Service Account
+resource "google_service_account_iam_member" "github_actions_wif_binding" {
+  service_account_id = google_service_account.bugtriage_runner_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions_pool.name}/attribute.repository/${var.github_repository}"
+}
+
+# 6. Secret Manager Secret for GitHub Token
 resource "google_secret_manager_secret" "github_token" {
   secret_id = "github-api-token"
   replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
+    auto {}
   }
 }
 
-# 4. Secret Manager Secret for Slack HMAC Signing Key
-resource "google_secret_manager_secret" "slack_hmac_key" {
-  secret_id = "slack-hmac-signing-key"
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-}
-
-# 5. Cloud Run Service for ADK 2.0 Agent Runtime Deployment
-resource "google_cloud_run_v2_service" "bug_triage_agent" {
-  name     = "bug-triage-agent-service"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
-
-  template {
-    service_account = google_service_account.bug_triage_agent_sa.email
-
-    containers {
-      image = "gcr.io/${var.project_id}/bug-triage-agent:latest"
-
-      env {
-        name  = "GOOGLE_CLOUD_PROJECT"
-        value = var.project_id
-      }
-
-      env {
-        name  = "GOOGLE_CLOUD_LOCATION"
-        value = var.region
-      }
-
-      env {
-        name = "GITHUB_TOKEN"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.github_token.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "HITL_HMAC_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.slack_hmac_key.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      resources {
-        limits = {
-          cpu    = "2000m"
-          memory = "2Gi"
-        }
-      }
-    }
-  }
-
-  depends_on = [
-    google_project_iam_member.agent_aiplatform_user,
-    google_project_iam_member.agent_secret_accessor,
-    google_project_iam_member.agent_dlp_user
-  ]
-}

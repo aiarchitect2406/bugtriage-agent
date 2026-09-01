@@ -1,6 +1,6 @@
 ---
 name: bug-triage-domain-mastery
-description: Comprehensive enterprise software engineering bug triage domain mastery guide covering real-world triage pain points, SLA matrices, vector duplicate clustering, git blame/CODEOWNERS routing, sandbox reproduction testing, and HITL review gates.
+description: Comprehensive enterprise software engineering bug triage domain mastery guide covering real-world triage pain points, SLA matrices, vector duplicate clustering, git blame/CODEOWNERS routing, sandbox reproduction testing, and dual-model review gates.
 ---
 
 # Skill: Software Engineering Bug Triage Domain Mastery
@@ -80,15 +80,13 @@ Unlike basic triage systems that stop at assigning tickets, an autonomous enterp
 
 ---
 
-## 6. Human-in-the-Loop (HITL) Gateway Protocol
+## 6. Autonomous Dual-Model Consensus Verification Protocol
 
-Enterprise security policy mandates that autonomous agents cannot push code directly to production repositories without human verification:
-1. **Checkpoint Pause**: Upon successful sandbox validation, `TriageCoordinator` pauses session execution in state `status = "AWAITING_HUMAN_REVIEW"`.
-2. **A2UI Review Card Rendering**: Render an interactive Review Card containing:
-   - Issue Summary, Assigned SLA Priority, and Primary Owner.
-   - Verified reproduction test snippet and unified diff patch.
-   - Sandbox test execution stdout/stderr logs.
-3. **Webhook Signoff**: The session remains paused in ADK session storage until an authorized engineer submits an HMAC-signed approval (`APPROVE`, `MODIFY`, `REJECT`), resuming the pipeline to generate a Pull Request.
+Enterprise security policy mandates that autonomous remediation is gated strictly by independent cross-vendor dual-model consensus:
+1. **Maker Synthesis**: Gemini 3.1 Pro Preview analyzes the root cause, extracts stack frames, and synthesizes an isolated reproduction test alongside a defensive unified diff patch.
+2. **Ephemeral Sandbox Pass**: The patch is applied and validated inside an isolated pytest sandbox (confirming failure on unpatched code and 100% pass on patched code).
+3. **Checker Verification**: Claude Sonnet 4.6 on Vertex AI audits the patch for CWE-476, CWE-89, type safety, logic regressions, and prompt injection defense.
+4. **Automated PR Publishing**: Upon achieving an approval score >= 90/100, the agent automatically commits the patch to a dedicated branch and opens a Pull Request on GitHub with full audit metadata.
 
 ---
 
@@ -139,7 +137,7 @@ To ensure reliable LLM reasoning and enterprise-grade robustness, all tools MUST
    - Wrap agent and tool executions in OpenTelemetry spans (`@tracer.start_as_current_span("AgentName:ToolName")`) to correlate multi-agent hops and execution latency.
 4. **Automated CI/CD Golden Dataset Evaluation**:
    - Validate agent trajectory correctness automatically in CI/CD (`.github/workflows/eval.yml`) using `eval_harness.py` against Golden Datasets (`golden_dataset.json`).
-   - Verify 100% compliance across PII redaction, vector duplicate detection, CODEOWNERS routing, sandbox pytest execution, and HITL A2UI card generation.
+   - Verify 100% compliance across PII redaction, vector duplicate detection, CODEOWNERS routing, sandbox pytest execution, and dual-model review consensus.
 
 ---
 
@@ -149,9 +147,8 @@ To ensure reliable LLM reasoning and enterprise-grade robustness, all tools MUST
    - Fetch secrets dynamically at runtime from Google Cloud Secret Manager (`app/config.py`) with environment variable fallbacks. Never hardcode API keys or credentials.
 2. **PII & Sensitive Data Protection**:
    - Scrub passwords, API tokens, email addresses, and PII from raw bug reports using Google Cloud Sensitive Data Protection (`dlp_v2.DlpServiceClient`) with regex fallback (`EnterprisePIIRedactor`) before logging or storage.
-3. **HITL HMAC Signoff Security**:
-   - Ensure high-stakes actions paused in `"AWAITING_HUMAN_REVIEW"` require HMAC signature verification (`process_hitl_webhook_signal`) before resuming.
+3. **Consensus Gated Security**:
+   - High-stakes actions require Maker-Checker consensus (Gemini 3.1 Pro synthesis + Claude Sonnet 4.6 security audit >= 90/100) before pull request creation.
 4. **Agent CLI (`agentapi` & `adk` CLI) Operations**:
    - Use `agentapi new-conversation --model=flash`, `agentapi get-conversation-metadata <id>`, and `agentapi send-message <id>` to inspect and control conversations programmatically.
    - Execute local ADK runtimes using `adk web` (web UI server) or `adk run` (terminal runner).
-

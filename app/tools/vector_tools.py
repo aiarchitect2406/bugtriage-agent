@@ -1,10 +1,107 @@
-"""ADK Tool for Vector Similarity Search and Bug Deduplication."""
-
+import os
+import json
 import math
+import logging
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from app.models.bug_report import DedupeSearchResult
 from app.config import Config
+
+logger = logging.getLogger(__name__)
+
+
+class PersistentBugStore:
+    """Persistent storage connecting the agent to a database for cross-turn history and vector deduplication."""
+
+    _store_path: str = os.getenv(
+        "PERSISTENT_DB_PATH",
+        os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "tests",
+            "fixtures",
+            "data",
+            "persistent_bugs.json",
+        ),
+    )
+    _cache: Optional[List[Dict[str, Any]]] = None
+
+    @classmethod
+    def _get_path(cls) -> str:
+        db_path = cls._store_path
+        os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+        return db_path
+
+    @classmethod
+    def get_all_bugs(cls) -> List[Dict[str, Any]]:
+        """Retrieves all bug records from the persistent database."""
+        path = cls._get_path()
+        if not os.path.exists(path):
+            return list(cls._cache or [])
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    cls._cache = data
+                    return list(data)
+        except Exception as e:
+            logger.debug(f"Persistent database read notice: {e}")
+        return list(cls._cache or [])
+
+    @classmethod
+    def store_bug(
+        cls,
+        issue_id: str,
+        title: str,
+        description: str,
+        stack_trace: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Persists a new bug entry to the database for cross-turn and cross-session retrieval."""
+        path = cls._get_path()
+        bugs = cls.get_all_bugs()
+
+        for b in bugs:
+            if b.get("issue_id") == issue_id:
+                b["title"] = title
+                b["description"] = description
+                b["stack_trace"] = stack_trace
+                b["metadata"] = metadata or {}
+                cls._save_bugs(bugs, path)
+                return b
+
+        entry = {
+            "issue_id": issue_id,
+            "title": title,
+            "description": description,
+            "stack_trace": stack_trace,
+            "metadata": metadata or {},
+        }
+        bugs.append(entry)
+        cls._save_bugs(bugs, path)
+        return entry
+
+    @classmethod
+    def _save_bugs(cls, bugs: List[Dict[str, Any]], path: str) -> None:
+        cls._cache = bugs
+        tmp_path = f"{path}.tmp"
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(bugs, f, indent=2)
+            os.replace(tmp_path, path)
+        except Exception as e:
+            logger.debug(f"Persistent database write notice: {e}")
+
+    @classmethod
+    def clear_store(cls) -> None:
+        """Clears the persistent store (used primarily for test isolation)."""
+        cls._cache = []
+        path = cls._get_path()
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
 
 class QuerySimilarBugsInput(BaseModel):
     """Input payload for vector duplicate search."""
@@ -71,7 +168,38 @@ def query_similar_bugs_by_vector(
                 recovery_hint="Ensure bug_title and bug_description contain descriptive text."
             ).model_dump()
 
-        candidates = candidate_historical_bugs if candidate_historical_bugs is not None else []
+        if candidate_historical_bugs is not None:
+            candidates = list(candidate_historical_bugs)
+        else:
+            candidates = PersistentBugStore.get_all_bugs()
+
+        # Check Vertex AI Search Datastore if configured
+        datastore_id = os.environ.get("VERTEX_SEARCH_DATASTORE_ID")
+        if datastore_id and not candidates:
+            try:
+                from google.cloud import discoveryengine_v1 as discoveryengine
+                search_client = discoveryengine.SearchServiceClient()
+                serving_config = (
+                    f"projects/{Config.PROJECT_ID}/locations/{Config.GEAP_LOCATION}/"
+                    f"collections/default_collection/dataStores/{datastore_id}/servingConfigs/default_search"
+                )
+                request = discoveryengine.SearchRequest(
+                    serving_config=serving_config,
+                    query=f"{bug_title} {bug_description}",
+                    page_size=5,
+                )
+                response = search_client.search(request=request)
+                for res in response.results:
+                    doc = getattr(res, "document", None)
+                    if doc and hasattr(doc, "struct_data"):
+                        s_data = dict(doc.struct_data)
+                        candidates.append({
+                            "issue_id": s_data.get("issue_id", doc.id),
+                            "title": s_data.get("title", ""),
+                            "description": s_data.get("description", ""),
+                        })
+            except Exception as v_err:
+                logger.debug(f"Vertex AI Search datastore query notice: {v_err}")
 
 
         target_text = f"{bug_title} {bug_description}"

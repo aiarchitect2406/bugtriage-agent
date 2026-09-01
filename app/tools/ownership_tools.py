@@ -92,7 +92,7 @@ def _load_codeowners_rules() -> List[tuple[str, List[str]]]:
     else:
         for pattern, owners in domain_fallbacks:
             if not any(r[0] == pattern for r in rules):
-                rules.insert(0, (pattern, owners))
+                rules.append((pattern, owners))
     return rules
 
 def _get_git_blame_authors(file_path: str) -> List[str]:

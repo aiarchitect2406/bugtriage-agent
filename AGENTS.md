@@ -65,13 +65,14 @@ flowchart LR
 - **Asynchronous & Decoupled Execution**: Decouple sub-agent tasks using `mode="task"` (ADK 2.0 task delegation) or A2A (`RemoteA2aAgent`) protocols.
 
 ### 1.3 Zero-Trust Security & Governance
+
 - **GEAP Agent Sandboxes**: Execute all dynamically generated scripts, tests, and untrusted code strictly inside native **GEAP Agent Sandboxes** (`Code Execution` / `BuiltInCodeExecutor`). Zero custom sandbox wrappers.
 - **SPIFFE Agent Identity & Zero Ambient Authority**: Enforce managed Agent Identity and deny-by-default access policies via Google Cloud Workload Identity Federation (WIF).
-- **GEAP Agent Gateway & Model Armor**: Proxy and govern all tool invocations through Agent Gateway. Redact PII and credentials using Google Cloud Sensitive Data Protection (Cloud DLP) and sanitize prompt injections with Model Armor.
-- **Zero Hardcoded Secrets**: Load credentials dynamically from Google Cloud Secret Manager (`google.cloud.secretmanager`).
-- **Human-in-the-Loop (HITL) Review Gates**: High-stakes actions (PR creation, code patching, deployment) MUST pause in session state `"AWAITING_HUMAN_REVIEW"` using `ResumabilityConfig(is_resumable=True)` and render declarative A2UI cards. Resume execution only upon HMAC-verified user signoff.
+- **Zero-Trust IAM & Tool Egress Governance**: Direct Client-to-Agent ingress is authenticated natively via Google Cloud Workload Identity Federation (WIF) and `roles/aiplatform.user`. Outbound tool egress is routed and governed through Agent Gateway in `AGENT_TO_ANYWHERE` mode (`bugtriage-agent-gateway`). Redact PII and credentials using Google Cloud Sensitive Data Protection (Cloud DLP) in the ingestion pipeline.
+- **Automated Consensus-Gated PR Creation**: Pull request creation is fully automated and gated strictly by dual-model consensus verification (Gemini 3.1 Pro synthesis + Claude Sonnet 4.6 security audit score >= 90/100) and ephemeral sandbox test pass. Direct automated PR publishing without blocking HITL pauses.
 
 ### 1.4 Performance & Reliability
+
 - **Native Action-Verb Tool Design**: Name tool functions with descriptive action verbs (`query_similar_bugs_by_vector`, `create_draft_pull_request`). Complete Google-style docstrings (`Args:`, `Returns:`, `Raises: None`).
 - **Pydantic Schemas & `.model_dump()` Returns**: Constrain tool inputs with Pydantic `BaseModel` (`Field(description=...)`). Return `.model_dump()` dictionaries from typed output schemas.
 - **Guided Error Recovery**: Catch all tool exceptions and return structured responses:
@@ -134,35 +135,31 @@ print(f"Loaded Skill: {rca_skill.display_name} (v{rca_skill.version})")
 
 ---
 
-### 2.2 GEAP Agent Gateway & Ingress Governance
+### 2.2 Direct Client-to-Agent Ingress (WIF) & Egress Governance
 
-All ingress traffic and tool egress MUST be routed through Google Cloud Agent Gateway.
+Inbound client calls from GitHub Actions communicate directly with the Vertex AI Agent Runtime `:query` API, authenticated using Google Cloud Workload Identity Federation (WIF) and authorized via `roles/aiplatform.user`. This eliminates the need for an intermediate Client-to-Agent Ingress Gateway.
 
-#### Ingress Manifest (`agent-gateway-ingress.yaml`):
-```yaml
-# Agent Gateway Ingress Configuration for GEAP
-gateway: projects/${PROJECT_ID}/locations/${REGION}/agentGateways/${GATEWAY_NAME}
-access_type: CLIENT_TO_AGENT
-protocol: A2A
-governance:
-  dlp_inspection: true
-  model_armor_enabled: true
-  spiffe_agent_identity: true
-```
-
-#### Deploying with Agent Gateway Binding:
+#### Deploying Agent to Agent Runtime:
 ```bash
 agents-cli deploy \
   --deployment-target agent_runtime \
-  --service-name adk-bugtriage-gw \
+  --service-name adk-bugtriage \
   --agent-identity \
-  --agent-gateway-ingress projects/${PROJECT_NUMBER}/locations/${REGION}/agentGateways/${GATEWAY_NAME} \
   --region ${REGION} \
   --no-confirm-project
 ```
 
+#### Direct Invocation from GitHub Actions (`triage-on-issue.yml`):
+```bash
+curl -X POST \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/reasoningEngines/${REASONING_ENGINE_ID}:query" \
+  -d '{"input": {"issue_id": "GH-123", "title": "Crash report", "description": "...", "raw_logs": "...", "source_system": "GitHub"}}'
+```
+
 #### Public Agent Card Endpoint:
-Once deployed, the agent card is published and accessible via Agent Gateway:
+Once deployed, the agent card is published and accessible via Agent Runtime:
 ```text
 https://${REGION}-aiplatform.googleapis.com/reasoningEngines/v1/projects/${PROJECT_ID}/locations/${REGION}/reasoningEngines/${REASONING_ENGINE_ID}/api/a2a/app/.well-known/agent-card.json
 ```
@@ -181,7 +178,7 @@ uv tool install google-agents-cli
 2. **Phase 2: Build & Implement**: Implement agent logic in `app/`. Use `agents-cli playground` for fast local testing.
 3. **Phase 3: The Evaluation Loop**: Add eval cases in `tests/eval/datasets/`, run `python tests/eval/run_eval.py` to ensure **100% (3/3) golden trajectory score**.
 4. **Phase 4: Pre-Deployment Tests**: Run `uv run pytest tests/unit tests/integration` to ensure **100% test pass rate**.
-5. **Phase 5: Deploy to Agent Runtime**: Deploy to Vertex AI Agent Runtime with Agent Gateway ingress.
+5. **Phase 5: Deploy to Agent Runtime**: Deploy to Vertex AI Agent Runtime with WIF client access and optional Agent Gateway egress.
 6. **Phase 6: Live Production Verification**: Run `uv run python tests/integration/test_live_github_e2e.py` to verify full GitHub Issue $\rightarrow$ GitHub Actions $\rightarrow$ WIF $\rightarrow$ PR creation.
 
 ### 3.3 CLI Command Reference Table
@@ -222,7 +219,7 @@ For detailed implementation recipes and code patterns, refer to the specialized 
 | **Agent Architecture & Multi-Agent DAGs** | [`agent-architecture-design`](.agents/skills/agent-architecture-design/SKILL.md) |
 | **Tool Design & Context Injection** | [`agent-tools-best-practices`](.agents/skills/agent-tools-best-practices/SKILL.md) |
 | **Sessions, Memory Bank & Compaction** | [`session-memory-state-management`](.agents/skills/session-memory-state-management/SKILL.md) |
-| **Zero-Trust, Agent Sandboxes & HITL** | [`zero-trust-governance`](.agents/skills/zero-trust-governance/SKILL.md) |
+| **Zero-Trust & Agent Sandboxes** | [`zero-trust-governance`](.agents/skills/zero-trust-governance/SKILL.md) |
 | **Observability, Cloud Logging & DLP** | [`observability-tracing-security`](.agents/skills/observability-tracing-security/SKILL.md) |
 | **Spec-Driven & Evaluation Development** | [`spec-driven-development`](.agents/skills/spec-driven-development/SKILL.md) |
 | **CI/CD, Eval Flywheel & IaC** | [`eval-cicd-deployment`](.agents/skills/eval-cicd-deployment/SKILL.md) |

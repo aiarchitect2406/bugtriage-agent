@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -39,6 +40,14 @@ from a2a.types import (
     TaskState,
 )
 from requests.exceptions import RequestException
+
+# Ensure local test requests to 127.0.0.1 bypass any Cloud SDK / system proxies
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+os.environ["no_proxy"] = "localhost,127.0.0.1"
+
+# Session with trust_env=False to ensure local loopback requests bypass system/SDK proxies
+http = requests.Session()
+http.trust_env = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +89,8 @@ def start_server() -> subprocess.Popen[str]:
         "127.0.0.1",
         "--port",
         str(PORT),
+        "--lifespan",
+        "on",
     ]
 
 
@@ -87,6 +98,7 @@ def start_server() -> subprocess.Popen[str]:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     env["INTEGRATION_TEST"] = "TRUE"
+    env["SESSION_SERVICE_URI"] = "inmemory://"
     # Advertise a loopback URL so the A2A client can reach the card's transport.
     env["APP_URL"] = BASE_URL
     env["PYTHONPATH"] = f"{project_root}:{env.get('PYTHONPATH', '')}"
@@ -99,6 +111,7 @@ def start_server() -> subprocess.Popen[str]:
         bufsize=1,
         cwd=project_root,
         env=env,
+        start_new_session=True,
     )
 
 
@@ -119,7 +132,7 @@ def wait_for_server(timeout: int = 90, interval: int = 1) -> bool:
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
-            response = requests.get(AGENT_CARD_URL, timeout=10)
+            response = http.get(AGENT_CARD_URL, timeout=5)
             if response.status_code == 200:
                 logger.info("Server is ready")
                 return True
@@ -135,18 +148,34 @@ def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
     """Pytest fixture to start and stop the server for testing."""
     logger.info("Starting server process")
     server_process = start_server()
+
     if not wait_for_server():
+        try:
+            pgid = os.getpgid(server_process.pid)
+            os.killpg(pgid, signal.SIGKILL)
+        except Exception:
+            pass
         pytest.fail("Server failed to start")
     logger.info("Server process started")
 
-    def stop_server() -> None:
+    try:
+        yield server_process
+    finally:
         logger.info("Stopping server process")
-        server_process.terminate()
-        server_process.wait()
+        try:
+            pgid = os.getpgid(server_process.pid)
+            os.killpg(pgid, signal.SIGTERM)
+            server_process.wait(timeout=2)
+        except Exception:
+            pass
+        finally:
+            try:
+                pgid = os.getpgid(server_process.pid)
+                os.killpg(pgid, signal.SIGKILL)
+                server_process.wait(timeout=2)
+            except Exception:
+                pass
         logger.info("Server process stopped")
-
-    request.addfinalizer(stop_server)
-    yield server_process
 
 
 def test_adk_run_sse(server_fixture: subprocess.Popen[str]) -> None:
@@ -155,7 +184,7 @@ def test_adk_run_sse(server_fixture: subprocess.Popen[str]) -> None:
     user_id = f"user_{uuid.uuid4()}"
     session_data = {"state": {"preferred_language": "English", "visit_count": 1}}
 
-    session_response = requests.post(
+    session_response = http.post(
         f"{BASE_URL}/apps/app/users/{user_id}/sessions",
         headers=HEADERS,
         json=session_data,
@@ -171,7 +200,7 @@ def test_adk_run_sse(server_fixture: subprocess.Popen[str]) -> None:
         "new_message": {"role": "user", "parts": [{"text": "Hi!"}]},
         "streaming": True,
     }
-    response = requests.post(
+    response = http.post(
         RUN_SSE_URL, headers=HEADERS, json=data, stream=True, timeout=60
     )
     assert response.status_code == 200
@@ -200,7 +229,7 @@ def test_a2a_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
     async def _stream() -> list[Any]:
         config = ClientConfig(
             streaming=True,
-            httpx_client=httpx.AsyncClient(timeout=60.0),
+            httpx_client=httpx.AsyncClient(timeout=60.0, trust_env=False),
         )
         factory = ClientFactory(config)
         client = await factory.create_from_url(A2A_RPC_URL.rstrip("/"))
@@ -233,7 +262,7 @@ def test_a2a_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
 
 def test_agent_card(server_fixture: subprocess.Popen[str]) -> None:
     """Test that the A2A agent card is served at the well-known URI."""
-    response = requests.get(AGENT_CARD_URL, timeout=10)
+    response = http.get(AGENT_CARD_URL, timeout=10)
     assert response.status_code == 200, f"A2A endpoint returned {response.status_code}"
 
     served_agent_card = response.json()

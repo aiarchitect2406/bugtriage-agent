@@ -1,5 +1,6 @@
 """Comprehensive End-to-End Pipeline Integration Tests for ADK 2.0 Agent."""
 
+import uuid
 import pytest
 from app.models.bug_report import BugReport
 from app.workflow import TriageCoordinator, run_triage_workflow
@@ -9,7 +10,9 @@ from app.config import Config
 @pytest.fixture
 def coordinator():
     """Initializes the TriageCoordinator."""
-    return TriageCoordinator()
+    c = TriageCoordinator()
+    c.historical_candidates = []
+    return c
 
 
 def test_e2e_pipeline_full_lifecycle(coordinator):
@@ -23,10 +26,11 @@ def test_e2e_pipeline_full_lifecycle(coordinator):
     6. Maker-Checker Peer Code Review with Claude Sonnet.
     7. Automated Pull Request Creation on target repository.
     """
+    unique_id = f"BUG-E2E-{uuid.uuid4().hex[:6]}"
     # 1. Raw Alert with PII
     raw_alert = BugReport(
-        issue_id="BUG-E2E-001",
-        title="NullPointerException in PaymentGateway on checkout",
+        issue_id=unique_id,
+        title=f"NullPointerException in PaymentGateway on checkout {unique_id}",
         description="Checkout process crashes when customer attempts to pay with null address.",
         raw_logs='File "app/services/payment_checkout.py", line 42, in process_checkout token=bearer_sec_9999 user_email=lead_dev@ecommerce.org',
         source_system="Sentry",
@@ -34,11 +38,11 @@ def test_e2e_pipeline_full_lifecycle(coordinator):
     )
 
     # 2. Execute Pipeline
-    result = coordinator.execute_triage_pipeline(raw_alert)
+    result = coordinator.execute_triage_pipeline(raw_alert, historical_candidates=[])
 
     # 3. Assertions on Triage Stage
     assert result["status"] == "PR_CREATED"
-    assert result["issue_id"] == "BUG-E2E-001"
+    assert result["issue_id"] == unique_id
     assert result["primary_owner"] == "@payments-team"
     assert result["priority"] == "P0"
     assert result["sla_target_hours"] == 2

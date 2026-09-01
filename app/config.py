@@ -16,14 +16,21 @@ except ImportError:
 class Config:
     """System configuration and Model Routing constants adhering to ADK 2.0."""
     
-    REPO_NAME: str = os.getenv("TARGET_REPO", "aiarchitect2406/example-payment-svc")
-    TARGET_REPO_URL: str = os.getenv("TARGET_REPO_URL", "https://github.com/aiarchitect2406/example-payment-svc.git")
-    TARGET_REPO_NAME: str = os.getenv("TARGET_REPO_NAME", "aiarchitect2406/example-payment-svc")
-    GITHUB_REPO: str = os.getenv("GITHUB_REPO", "aiarchitect2406/example-payment-svc")
-    LOCAL_TARGET_REPO_PATH: str = os.getenv("LOCAL_TARGET_REPO_PATH", "./target_repo")
+    TARGET_REPO: str = os.getenv("TARGET_REPO", "aiarchitect2406/example-payment-svc")
+    REPO_NAME: str = TARGET_REPO
+    TARGET_REPO_NAME: str = TARGET_REPO
+    GITHUB_REPO: str = TARGET_REPO
+    TARGET_REPO_URL: str = os.getenv("TARGET_REPO_URL", f"https://github.com/{TARGET_REPO}.git")
+    LOCAL_TARGET_REPO_PATH: str = os.getenv("LOCAL_TARGET_REPO_PATH", "/tmp/example-payment-svc")
+    PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "nithin-usbaws-aiml-solns-demos"))
+    LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+    GEAP_LOCATION: str = os.getenv("GEAP_LOCATION", "us-central1")
+    REASONING_ENGINE_ID: str = os.getenv("REASONING_ENGINE_ID", "6439555380128251904")
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
-    PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", os.getenv("PROJECT_ID", "your-gcp-project-id"))
-    LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+    AGENT_GATEWAY_EGRESS: str = os.getenv(
+        "AGENT_GATEWAY_EGRESS",
+        "projects/539424669613/locations/us-central1/agentGateways/bugtriage-agent-gateway"
+    )
     
     # Model Routing Constants (Vertex AI & Multi-Model Ensemble)
     FAST_MODEL: str = os.getenv("FAST_MODEL", "gemini-3.7-flash")
@@ -39,7 +46,7 @@ class Config:
     
     # Thresholds & Security
     DUPLICATE_SIMILARITY_THRESHOLD: float = float(os.getenv("DUPLICATE_THRESHOLD", "0.85"))
-    HMAC_SECRET_KEY: str = os.getenv("HITL_HMAC_SECRET", "super-secret-hitl-hmac-key")
+    REQUIRE_HUMAN_APPROVAL: bool = os.getenv("REQUIRE_HUMAN_APPROVAL", "false").lower() == "true"
 
     @classmethod
     def get_secret(cls, secret_id: str, default: Optional[str] = None) -> str:
@@ -60,3 +67,11 @@ class Config:
         if default is not None:
             return default
         return f"mock-{secret_id}-key"
+
+    @classmethod
+    def get_github_token(cls) -> str:
+        """Fetch GitHub token dynamically from Secret Manager or environment."""
+        token = os.getenv("GITHUB_TOKEN", "").strip()
+        if token:
+            return token
+        return cls.get_secret("github-token", default="")
